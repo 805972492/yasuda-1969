@@ -1,0 +1,86 @@
+{
+ "scope": "公开史料与官方统计核读；来源按主张逐项使用，未核档案另列缺口。",
+ "sources": {
+  "S1": {
+   "title": "東京大学「紛争日誌 その4」（1969年1月1日—3月26日）",
+   "publisher": "东京大学文书馆（翻刻）",
+   "url": "https://www.u-tokyo.ac.jp/content/400261559.pdf",
+   "evidence_type": "一手日志（当日记录、翻刻）",
+   "supports": "逐日分钟级记录：入构时刻、各馆解除、逮捕人数、神田联动、发布与交涉",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S34": {
+   "title": "島泰三『安田講堂 1968—1969』（中文译本）",
+   "publisher": "当事者回忆录",
+   "url": "",
+   "evidence_type": "当事者回忆",
+   "supports": "馆内分层配置、馆内生活、恐惧与秩序、逮捕 397 人、伤情 76 重伤",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S35": {
+   "title": "小熊英二『1968』上下（中文译本）",
+   "publisher": "研究著作",
+   "url": "",
+   "evidence_type": "研究综述（引大量访谈与统计）",
+   "supports": "世代与阶层结构、派系构成、日共与民青的定性语汇、逮捕 983 说",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S41": {
+   "title": "犯罪白書 昭和44年版 第一編第五章二",
+   "publisher": "法務省",
+   "url": "https://hakusyo1.moj.go.jp/jp/10/nfm/n_10_2_1_5_2_0.html",
+   "evidence_type": "官方统计（检察阶段）",
+   "supports": "东大事件受理 984 人、起訴 1,776、勾留认容率 98.0%",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S43": {
+   "title": "東京大学文書館紀要 第37号（「紛争日誌 その1」解題）",
+   "publisher": "东京大学文书馆",
+   "url": "https://www.u-tokyo.ac.jp/content/400141850.pdf",
+   "evidence_type": "史料解题",
+   "supports": "資料群 A–G 与底本关系、翻刻取舍原则",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S2": {
+   "title": "第61回国会 会議録（1969年）安田講堂事件関連答弁",
+   "publisher": "国立国会图书馆 国会会议録检索システム",
+   "url": "https://kokkai.ndl.go.jp/",
+   "evidence_type": "国会答辩（官方记录）",
+   "supports": "警察側负伤 653（入院 37）、燃烧瓶 500 本、起訴 509、物件損害 4.5 億圆",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S3": {
+   "title": "最高裁刑事局 学生運動関係事件の処理状況（二次引述）",
+   "publisher": "最高裁判所事務总局（經二次引述）",
+   "url": "",
+   "evidence_type": "司法統計（二次引述）",
+   "supports": "起訴 607 人、一審有罪 590 人（实刑 147 人）",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S27": {
+   "title": "日経「東大安田講堂攻防から50年」（2019-01-17）等報纸报道",
+   "publisher": "日本经济新闻 等",
+   "url": "https://www.nikkei.com/article/DGKKZO40105530X10C19A1EAC000/",
+   "evidence_type": "报紙报道（二次引述）",
+   "supports": "机动队約 8,500 人、逮捕約 630 人、催泪弹 1 万发·96 台车两、入試中止",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  },
+  "S46": {
+   "title": "NHKクロニクル 1969年1月18日・19日 総合テレビ番組表",
+   "publisher": "NHK",
+   "url": "https://www.nhk.or.jp/archives/chronicle/",
+   "evidence_type": "播出记录（用户提供截图）",
+   "supports": "两日节目表；无独立「现场直播」，有特别节目与新闻焦点",
+   "accessed": "2026-11-20",
+   "original_archive_examined": false
+  }
+ }
+}

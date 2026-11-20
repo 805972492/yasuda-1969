@@ -1,0 +1,45 @@
+# 版权材料：只留链接，不进仓库
+*.epub
+*.pdf
+src/
+**/oguma_1968.txt
+**/shimata_yasuda.txt
+**/*文書館*
+犯罪白書*/
+1969.01.*节目表.png
+1969.01.*节目表.PNG
+
+# 模型密钥、会话、日志
+.gentactix-llm.enc
+**/*.enc
+logs/
+.sessions/
+**/sessions/
+traces/
+
+# Python / Node
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.pytest_cache/
+.mypy_cache/
+
+# 构建与临时产物
+_cp*/
+_cpUI*/
+_t.html
+_dom.html
+_check.js
+_check.txt
+_testlog.txt
+_*.py
+!tools/*.py
+!campaign/*.py
+!integrations/**/*.py
+dist/
+build/
+*.log
+Thumbs.db
+.DS_Store

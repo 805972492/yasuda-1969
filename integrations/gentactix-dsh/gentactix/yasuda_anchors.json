@@ -1,0 +1,226 @@
+{
+ "checked": "2026-11-20",
+ "display_crs": "WGS84",
+ "precision_note": "校園內点位取自现代 OSM 輪廓与史料方位推定；不是 1969 年測量圖，誤差圈为工作估計。",
+ "sources": {
+  "osm": {
+   "url": "https://www.openstreetmap.org/",
+   "license": "ODbL 1.0",
+   "attribution": "© OpenStreetMap contributors",
+   "accessed": "2026-11-20"
+  },
+  "gsi": {
+   "url": "https://maps.gsi.go.jp/development/ichiran.html",
+   "license": "国土地理院コンテンツ利用規約",
+   "attribution": "国土地理院",
+   "accessed": "2026-11-20"
+  }
+ },
+ "points": {
+  "yasuda_hall": {
+   "name": "安田讲堂",
+   "coordinates": [
+    35.713428,
+    139.762297
+   ],
+   "kind": "1975 年以前原位置（现存）",
+   "uncertainty_km": 0.01,
+   "identity_sources": [
+    "S1",
+    "S21"
+   ],
+   "note": "正面朝西（正门·银杏并木）、背面东（御殿下）。1·2 层在崖下、3 层以上台地，正面玄関在 3 层。",
+   "source_url": "https://www.openstreetmap.org/?mlat=35.713428&mlon=139.762297#map=19/35.713428/139.762297"
+  },
+  "main_gate": {
+   "name": "正门",
+   "coordinates": [
+    35.712941,
+    139.75966
+   ],
+   "kind": "构内门",
+   "uncertainty_km": 0.01,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.712941&mlon=139.75966#map=19/35.712941/139.75966"
+  },
+  "akamon": {
+   "name": "赤门",
+   "coordinates": [
+    35.710592,
+    139.760359
+   ],
+   "kind": "构内门",
+   "uncertainty_km": 0.01,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.710592&mlon=139.760359#map=19/35.710592/139.760359"
+  },
+  "ryuokomon": {
+   "name": "龙冈门（推定）",
+   "coordinates": [
+    35.7118,
+    139.764
+   ],
+   "kind": "构内门（方位推定）",
+   "uncertainty_km": 0.1,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.7118&mlon=139.764#map=19/35.7118/139.764"
+  },
+  "ikenohata": {
+   "name": "池之端门（推定）",
+   "coordinates": [
+    35.7125,
+    139.7647
+   ],
+   "kind": "构内门（方位推定）",
+   "uncertainty_km": 0.1,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.7125&mlon=139.7647#map=19/35.7125/139.7647"
+  },
+  "yayoi": {
+   "name": "弥生门（推定）",
+   "coordinates": [
+    35.715,
+    139.7615
+   ],
+   "kind": "构内门（方位推定）",
+   "uncertainty_km": 0.1,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.715&mlon=139.7615#map=19/35.715/139.7615"
+  },
+  "houbun2": {
+   "name": "法文2号馆（推定）",
+   "coordinates": [
+    35.713,
+    139.7606
+   ],
+   "kind": "建物（现輪廓未收）",
+   "uncertainty_km": 0.08,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.713&mlon=139.7606#map=19/35.713/139.7606"
+  },
+  "houbun1": {
+   "name": "法文1号馆",
+   "coordinates": [
+    35.713458,
+    139.76091
+   ],
+   "kind": "建物（现存）",
+   "uncertainty_km": 0.02,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.713458&mlon=139.76091#map=19/35.713458/139.76091"
+  },
+  "reppinkan": {
+   "name": "工学部列品馆",
+   "coordinates": [
+    35.71395,
+    139.76035
+   ],
+   "kind": "建物（现存、今工学部本部）",
+   "uncertainty_km": 0.03,
+   "identity_sources": [
+    "S1",
+    "S22"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.71395&mlon=139.76035#map=19/35.71395/139.76035"
+  },
+  "igakubu_center": {
+   "name": "医学部综合中央馆",
+   "coordinates": [
+    35.710798,
+    139.76326
+   ],
+   "kind": "建物（现存）",
+   "uncertainty_km": 0.02,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.710798&mlon=139.76326#map=19/35.710798/139.76326"
+  },
+  "igakubu_honkan": {
+   "name": "医学部本馆（推定）",
+   "coordinates": [
+    35.7108,
+    139.7618
+   ],
+   "kind": "建物（位置推定）",
+   "uncertainty_km": 0.1,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.7108&mlon=139.7618#map=19/35.7108/139.7618"
+  },
+  "kogakubu1": {
+   "name": "工学部1号馆",
+   "coordinates": [
+    35.714231,
+    139.76006
+   ],
+   "kind": "建物（现存）",
+   "uncertainty_km": 0.02,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.714231&mlon=139.76006#map=19/35.714231/139.76006"
+  },
+  "kyoyo_gym": {
+   "name": "教養学部（驹场·参考）",
+   "coordinates": [
+    35.6605,
+    139.6852
+   ],
+   "kind": "构外参考",
+   "uncertainty_km": 0.5,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.6605&mlon=139.6852#map=19/35.6605/139.6852"
+  },
+  "ochanomizu": {
+   "name": "御茶之水站前（神田战场·参考）",
+   "coordinates": [
+    35.699,
+    139.7643
+   ],
+   "kind": "构外战场（参考点）",
+   "uncertainty_km": 0.3,
+   "identity_sources": [
+    "S1"
+   ],
+   "source_url": "https://www.openstreetmap.org/?mlat=35.699&mlon=139.7643#map=19/35.699/139.7643"
+  }
+ },
+ "campaigns": {
+  "安田讲堂攻防战-1969.01.18至1969.01.19": {
+   "points": [
+    "yasuda_hall",
+    "main_gate",
+    "akamon",
+    "ryuokomon",
+    "ikenohata",
+    "yayoi",
+    "houbun2",
+    "houbun1",
+    "reppinkan",
+    "igakubu_center",
+    "igakubu_honkan",
+    "kogakubu1",
+    "kyoyo_gym",
+    "ochanomizu"
+   ]
+  }
+ }
+}

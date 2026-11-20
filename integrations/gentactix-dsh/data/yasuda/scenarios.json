@@ -1,0 +1,1238 @@
+{
+ "schema_version": 2,
+ "title": "Gentactix-DSH 战役包·安田讲堂攻防战（1969.01.18—01.19）",
+ "checked": "2026-11-20",
+ "use": "公开史料核读；不是窮盡檔案，也不是学术定論。教学用几何裁决，不宣稱战損精算。",
+ "scenarios": [
+  {
+   "id": "YS01",
+   "name": "安田讲堂攻防战-1969.01.18至1969.01.19",
+   "track": "全共斗（守）／警视厅机动队（攻）",
+   "kind": "都市内构内要塞攻防（逐馆解除→逐层制压）",
+   "scope": "1969-01-18 06:30 至 1969-01-19 18:00 的构内攻防；含列品馆·法学部研究室·法文2号馆·医学部·教育学部等逐馆解除，以及神田（御茶之水）方面的兵力抽调。1/20 以后只作收束节点。",
+   "aliases": [
+    "安田講堂攻防戦",
+    "東大安田講堂事件",
+    "安田講堂落城"
+   ],
+   "sources": [
+    "S1",
+    "S34",
+    "S35",
+    "S41",
+    "S43",
+    "S46",
+    "S2",
+    "S3",
+    "S27"
+   ],
+   "forces": [
+    {
+     "side": "机动队",
+     "unit": "第1·第2机动队（工学部方面）",
+     "description": "06:50 自农学部正门入构，过陆桥向工学部；责任区为工学部1·2·7·8号馆与列品馆方面。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "第3·第4机动队（龙冈门·池之端门）",
+     "description": "07:03 自龙冈门与池之端门入构，责任区医学部方面与构内东南。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "第5·第6机动队（赤门）",
+     "description": "07:05 自赤门入构，责任区法学部·文学部·经济学部方面。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "第7·第8机动队（正门·讲堂正面）",
+     "description": "正门方面待机与正面攻略；13:20 本格攻击、15:20 正面攻击。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "装甲车·放水车队",
+     "description": "放水车10数台（09:00）、装甲车以11:00 破列品馆路障、烟幕与催泪弹支援。",
+     "sources": [
+      "S1",
+      "S34"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "直升机（侦察·催泪液）",
+     "description": "08:00 上空投催泪弹、14:35 铁桶催泪液、次日 09:00 风压支援。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "私服·搜查班",
+     "description": "500 人（S1）；17:50 明大学生会馆突入救出即其行动。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "神田增派（东大→神田 900 人）",
+     "description": "13:30 自东大抽调 900 人赴神田，与既存部队合计 2,000 人阻止学生流向警视厅（自 8,000 人中抽出，不另加于总数）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "全共斗",
+     "unit": "安田讲堂 1层（大讲堂下层）",
+     "description": "本乡本科生部队 40 人，文科·理科两分队守四处楼梯；对党派部队无指挥权。",
+     "sources": [
+      "S34"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "中核派",
+     "unit": "安田讲堂 2层（中核派＋全斗联·青医联）",
+     "description": "二层约 30 人为中核派·全斗联·青医联混成，自 17 日夜由中核派守卫，12:15 前后被捕 20 余名；另有自三层支援二层街垒的部署（S34 引岛泰三）。",
+     "sources": [
+      "S34",
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "反帝学评",
+     "unit": "安田讲堂 5层（左）",
+     "description": "解放派据 5 层左侧；16:30 与社学同分别在 5 层南侧屋顶与 6 层阳台。人数史料未给。",
+     "sources": [
+      "S34",
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "社学同",
+     "unit": "安田讲堂 5层（右）",
+     "description": "社学同据 5 层右侧；16:30 在 6 层阳台唱国际歌。人数史料未给。",
+     "sources": [
+      "S34",
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "中核派",
+     "unit": "安田讲堂 6层·钟楼",
+     "description": "中核派在 6 层中央与钟楼；17:45 钟楼屋顶最后数人。人数史料未给。",
+     "sources": [
+      "S34",
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "中核派",
+     "unit": "法学部研究室（法研）",
+     "description": "15 日 09:30 中核派＋四托洛約 130 人入；18 日 11:40 突入 3 层、屋顶浇汽油，15:35 屋顶 121 人被捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "社学同 ML派",
+     "unit": "工学部列品馆",
+     "description": "14 日 16:00 占据要塞化；18 日 08:50 排除开始、火焰喷射器、11:00 装甲车破路障、13:00 过后屋顶 32 人（女 3·重伤 2）。",
+     "sources": [
+      "S1",
+      "S34"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "革马派",
+     "unit": "法文2号馆",
+     "description": "18 日 09:20 前后 14 人在 3·4 层投石，屋顶全员被捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "全共斗",
+     "unit": "医学部中央馆（塔屋）",
+     "description": "16 人在塔屋抵抗至 08:30 全员被捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "反帝学评",
+     "unit": "理学部1号馆（封锁·馆内无人）",
+     "description": "1/15 16:00 反帝学评主力约 150 人侵入；1/17 12:00 再封锁；18 日 07:10 机动队到着时馆内无人（1/9 事件见证至 11:30）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "民青",
+     "unit": "医学部本馆（守备）",
+     "description": "18 日 19:50 共斗約 200 攻、民青約 200 自 2 楼阳台放水投石；19:30 前后仍在守。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "全共斗",
+     "unit": "神田街垒队（御茶之水·明大通）",
+     "description": "19 日 09:00 过夜约 800 人行动开始，御茶之水站与明大通一带筑 10 处街垒；12:50 拦停都电。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "全共斗",
+     "unit": "明大骏河台（过夜队）",
+     "description": "明大学生会馆与骏河台校舍为神田方面据点；18 日 09:35 自此处出发袭御茶之水站前派出所。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "全共斗",
+     "unit": "驹场第8本馆队",
+     "description": "驹场第 8 本馆长期被封锁；15 日民青来攻时馆内约 100 人。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "全共斗",
+     "unit": "本乡增援（日大·他大）",
+     "description": "15–17 日陆续入构的支援部队（日大共斗 40、他大数百）；可投入本乡任何据点。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "民青",
+     "unit": "教育学部（民青据点）",
+     "description": "1/9 教育学部有民青武装约 3,000 人；1/10 秩父宮集会由民青主导；1/14 19:57 千人示威自此出发。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "民青",
+     "unit": "第2食堂（民青据点）",
+     "description": "1/1 15:00 民青约 180 人向第二食堂示威；1/10 0:30 示威后分散入第 2 食堂等据点。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "民青",
+     "unit": "驹场第1·2本馆（民青）",
+     "description": "12 日 20:30 驹场民青＋班级联合战术占据学生会馆·1 号馆并夺回第 1·2 本馆。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "side": "机动队",
+     "unit": "御茶之水站前派出所（守备）",
+     "description": "18 日 09:35 被 150 人袭击破玻璃；19 日 12:50 前后再被占据·放火。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    }
+   ],
+   "events": [
+    {
+     "date": "1969-01-18",
+     "time_label": "06:30",
+     "precision": "小时",
+     "event": "警视厅依大学正式要請，在本富士署设总合警备本部；第1—第8机动队及各方面部队 8,000 人、私服 500 人，合计 8,500 人。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "06:30",
+     "precision": "小时",
+     "event": "施设部设备課切断占据中及周边建筑的送电（06:45 停水）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "06:50",
+     "precision": "小时",
+     "event": "第1·第2机动队自农学部正门入构，过陆桥向工学部。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "07:03",
+     "precision": "小时",
+     "event": "部队自龙冈门、池之端门入构。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "07:05",
+     "precision": "小时",
+     "event": "部队自赤门入构。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "07:10",
+     "precision": "小时",
+     "event": "机动队抵理学部1号馆；馆内无人，1/9 见证验证至 11:30。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "07:12",
+     "precision": "小时",
+     "event": "弥生门路障撤去。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "07:20",
+     "precision": "小时",
+     "event": "医学部1号馆（学生5人逮捕）与3号馆解除；中央馆塔屋 16 人抵抗。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "08:20",
+     "precision": "小时",
+     "event": "医学部中央馆塔屋 16 人全员逮捕（約 08:30）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "08:00",
+     "precision": "小时",
+     "event": "对大讲堂形成包围；各所发射催泪弹，直升机上空投弹。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "08:50",
+     "precision": "小时",
+     "event": "工学部列品馆排除开始：社学同 ML 派以投石、燃烧瓶、瓦斯管自制火焰喷射器抵抗。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "09:00",
+     "precision": "小时",
+     "event": "放水车 10 数台向大讲堂放水。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "09:15",
+     "precision": "小时",
+     "event": "教育学部解除（09:15 令状、机动队約 100 人一巡、11:20 验证終了）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "09:00",
+     "precision": "小时",
+     "event": "法学部研究室排除开始（中核派·四托洛）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "11:00",
+     "precision": "小时",
+     "event": "装甲车破壞列品馆路障，部队自后门与法文1号馆突入、制压 1 楼。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "08:40",
+     "precision": "时段",
+     "event": "列品馆 2·3·4 楼起火，消防车出动（时刻按 11:39 前后报導并列）。",
+     "sources": [
+      "S1",
+      "S34"
+     ],
+     "evidence_status": "source_conflict",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "11:40",
+     "precision": "小时",
+     "event": "法学部研究室突入 3 楼；学生在屋顶浇汽油纵火。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "13:00",
+     "precision": "小时",
+     "event": "列品馆屋顶突入，逮捕 32 人（女 3、重伤 2）；学生喊「瓦斯弹直击伤及学友，停止攻击，无条件投降」。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "13:30",
+     "precision": "小时",
+     "event": "神田：逃入明大·中大的学生增至約 1,500 人，喊「攻击警视厅」；自东大抽调机动队 900 人，合計 2,000 人阻止。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "13:20",
+     "precision": "小时",
+     "event": "对大讲堂本格攻击开始；装甲车接近庶務部入口，被燃烧瓶点燃。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "14:35",
+     "precision": "小时",
+     "event": "直升机散布铁桶催泪液。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "15:20",
+     "precision": "小时",
+     "event": "正面攻击。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "15:30",
+     "precision": "小时",
+     "event": "背面 2 處約 50 人突入。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "15:35",
+     "precision": "小时",
+     "event": "法学部研究室屋顶突入，逮捕 121 人（中核派·四托洛）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "16:10",
+     "precision": "小时",
+     "event": "大讲堂 2 楼被侵入。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "16:20",
+     "precision": "小时",
+     "event": "电锯破门。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "17:30",
+     "precision": "小时",
+     "event": "警备本部下令中止，部队退去（S34 作 17:10 中止、17:19 广播重开）。",
+     "sources": [
+      "S1",
+      "S34"
+     ],
+     "evidence_status": "source_conflict",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "19:00",
+     "precision": "小时",
+     "event": "放水车配置，断续放水至翌朝。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "21:30",
+     "precision": "小时",
+     "event": "加藤总长代行发表声明：退去期限延至 20 日 10 时。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-18",
+     "time_label": "23:59",
+     "precision": "日",
+     "event": "本乡构内逮捕 273 人（S1 日末统计，无具体时刻，此处置于日末）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "06:00",
+     "precision": "小时",
+     "event": "机动队在大讲堂周边重新集结。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "07:00",
+     "precision": "小时",
+     "event": "放水再开；部队自南北突入。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "09:00",
+     "precision": "小时",
+     "event": "放水达 5 楼；直升机风压支援；装甲车接近；木造隧道施设。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "09:20",
+     "precision": "小时",
+     "event": "各层楼梯街垒加固；部队以绳索·电动电钻·切割机拆除。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "09:00",
+     "precision": "小时",
+     "event": "神田：过夜约 800 人行动开始，御茶之水站与明大通一帶构筑 10 處街垒。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "12:00",
+     "precision": "小时",
+     "event": "2 楼 20 数人被捕（一說 12:15）。",
+     "sources": [
+      "S1",
+      "S34"
+     ],
+     "evidence_status": "source_conflict",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "12:55",
+     "precision": "小时",
+     "event": "3 楼学生部付近被制压。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "12:50",
+     "precision": "小时",
+     "event": "神田：御茶之水橋都电被拦停、一时占据；本乡2丁目冲突。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "13:50",
+     "precision": "小时",
+     "event": "南側 2→3 楼楼梯激战。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "14:45",
+     "precision": "小时",
+     "event": "3 楼街垒撤去；15 时頃馆内 200 人以上被捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "15:35",
+     "precision": "小时",
+     "event": "4→5 楼；北側屋顶抵抗約 10 分鐘停止。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "15:50",
+     "precision": "小时",
+     "event": "守备队全部被捕（S34；S1 作 15:00 过后 200 人以上、15:35 推进）。",
+     "sources": [
+      "S34",
+      "S1"
+     ],
+     "evidence_status": "source_conflict",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "16:30",
+     "precision": "小时",
+     "event": "5 楼南側屋顶＝反帝学评、6 楼阳台＝社学同；唱国际歌、反帝学评領袖演说。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "17:27",
+     "precision": "小时",
+     "event": "钟楼突入。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "17:40",
+     "precision": "小时",
+     "event": "南側屋顶与 6 楼阳台 60 人逮捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "17:45",
+     "precision": "小时",
+     "event": "钟楼屋顶共产同数人被捕——最后一人。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "19:00",
+     "precision": "小时",
+     "event": "公安部验证至 21:00：押收 25 件 901 点、敷石等 14 袋、无炸药。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-19",
+     "time_label": "19:00",
+     "precision": "小时",
+     "event": "神田：本乡2·3丁目两次冲突（18:42—20:00）、街垒至 22 时撤除；至夜间 75 人逮捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-20",
+     "time_label": "10:00",
+     "precision": "小时",
+     "event": "退去期限（18 日 21:30 声明）。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-20",
+     "time_label": "11:30",
+     "precision": "小时",
+     "event": "佐藤首相·坂田文相一行自龙冈门来学約 1 小时，加藤案内视察安田讲堂、法研。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1969-01-20",
+     "time_label": "11:30",
+     "precision": "小时",
+     "event": "文部省与东大会談，入試中止最終决定（S27 二传说，C 级）。",
+     "sources": [
+      "S27"
+     ],
+     "evidence_status": "unverified",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "09:20",
+     "precision": "小时",
+     "event": "驹场代表团系约 300 人示威；11:00 明大和泉约 50 人正门前静坐，驹场学生加入超 100 人。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "09:35",
+     "precision": "分钟",
+     "event": "神田：明大学生会馆出发约 150 人袭御茶之水站前派出所，破玻璃约 15 分后退去。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "09:50",
+     "precision": "分钟",
+     "event": "神田：中大社学同约 100 人掘 YMCA 前铺石，袭御茶之水与骏河台下派出所。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "11:00",
+     "precision": "小时",
+     "event": "神田：日大共斗约 50 人＋社学同约 150 人示威，正午前机动队发射催泪弹。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "13:30",
+     "precision": "分钟",
+     "event": "神田：逃入明大/中大者约 1,500 人喊「警视厅攻击」；东大从机动队 900 人增派，以 2,000 人阻止。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "17:50",
+     "precision": "分钟",
+     "event": "神田：私服警官 1 人被带入明大学生会馆，机动队约 200 人突入救出。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/18",
+     "time_label": "20:00",
+     "precision": "小时",
+     "event": "神田：主力撤回中大，决议「明日再攻东大」，22 时解散。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/19",
+     "time_label": "09:00",
+     "precision": "分钟",
+     "event": "神田：明大·日大过夜约 800 人行动开始，御茶之水站与明大通一带街垒 10 处。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/19",
+     "time_label": "12:50",
+     "precision": "分钟",
+     "event": "神田：御茶之水桥拦停都电、赶下司机车掌；本乡2丁目冲突，至夜 75 人逮捕。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/19",
+     "time_label": "18:42",
+     "precision": "分钟",
+     "event": "神田：本乡2·3丁目两次冲突，街垒维持至 22 时。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    },
+    {
+     "date": "1/19",
+     "time_label": "22:00",
+     "precision": "小时",
+     "event": "神田：机动队趁总会后撤离时一齐推进，街垒撤除。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account",
+     "source_locator": {}
+    }
+   ],
+   "figures": [
+    {
+     "side": "机动队",
+     "metric": "出动兵力",
+     "value": 8500,
+     "qualifier": "人",
+     "scope": "1969-01-18 06:30 总合警备本部",
+     "note": "第1—第8机动队 8,000＋私服 500；不是同一时刻投入正面的人数。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "机动队",
+     "metric": "出动兵力（細目）",
+     "value": 8513,
+     "qualifier": "人",
+     "scope": "18 日全日",
+     "note": "S34 細目：8 队 4,678＋另两方面 2,565＋预备与干部 1,000 餘；与 S1 总数差 13 人。",
+     "sources": [
+      "S34"
+     ],
+     "evidence_status": "source_conflict"
+    },
+    {
+     "side": "机动队",
+     "metric": "战车·放水车",
+     "value": 12,
+     "qualifier": "辆",
+     "scope": "18 日",
+     "note": "S34 作 12 辆水龙车；S1 只作「10 数台」。",
+     "sources": [
+      "S34",
+      "S1"
+     ],
+     "evidence_status": "source_conflict"
+    },
+    {
+     "side": "机动队",
+     "metric": "催泪弹",
+     "value": 10000,
+     "qualifier": "发",
+     "scope": "18 日",
+     "note": "朝日新闻引述（二手，C 级）；S34 作 10,528 发、瓦斯銃 500 支。",
+     "sources": [
+      "S27",
+      "S34"
+     ],
+     "evidence_status": "unverified"
+    },
+    {
+     "side": "机动队",
+     "metric": "警察側负伤",
+     "value": 653,
+     "qualifier": "人",
+     "scope": "18—19 日",
+     "note": "国会答辩（荒木萬壽夫 1969-03-25）：「六百五十三名、内入院 37 名」。",
+     "sources": [
+      "S2"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "讲堂内逮捕",
+     "value": 397,
+     "qualifier": "人",
+     "scope": "19 日",
+     "note": "S34 数字；S1 未给馆内总数，只给「200 人以上」与分楼层逮捕。",
+     "sources": [
+      "S34"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "讲堂内逮捕（另说）",
+     "value": 374,
+     "qualifier": "人",
+     "scope": "19 日",
+     "note": "S35 数字。",
+     "sources": [
+      "S35"
+     ],
+     "evidence_status": "source_conflict"
+    },
+    {
+     "side": "全共斗",
+     "metric": "屋顶逮捕",
+     "value": 90,
+     "qualifier": "人",
+     "scope": "19 日 17:30",
+     "note": "S34：「頂层平台上約 90 名青年学生全部被捕」。",
+     "sources": [
+      "S34"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "本乡构内逮捕",
+     "value": 273,
+     "qualifier": "人",
+     "scope": "18 日",
+     "note": "S1 日末统计。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "大讲堂逮捕",
+     "value": 469,
+     "qualifier": "人",
+     "scope": "19 日",
+     "note": "S1 日末「其他」栏。",
+     "sources": [
+      "S1"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "检举总数",
+     "value": 633,
+     "qualifier": "人",
+     "scope": "18—19 日",
+     "note": "警视厅记录（S34 引）；其中东大生 38 人。",
+     "sources": [
+      "S34"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "检举总数（另说）",
+     "value": 983,
+     "qualifier": "人",
+     "scope": "18—19 日",
+     "note": "S35 数字（含神田）。",
+     "sources": [
+      "S35"
+     ],
+     "evidence_status": "source_conflict"
+    },
+    {
+     "side": "全共斗",
+     "metric": "起訴",
+     "value": 607,
+     "qualifier": "人",
+     "scope": "最終",
+     "note": "最高裁刑事局；1969-03 时点 509 人。",
+     "sources": [
+      "S3"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "学生负伤（重伤）",
+     "value": 76,
+     "qualifier": "人",
+     "scope": "18—19 日",
+     "note": "S34：「失明 1 人、重伤 76 人」；另「面部被瓦斯弹击中者 18 名」。",
+     "sources": [
+      "S34"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "全共斗",
+     "metric": "东大事件受理",
+     "value": 984,
+     "qualifier": "人",
+     "scope": "1969-01-09—19",
+     "note": "犯罪白书（檢察阶段受理，非逮捕数）。",
+     "sources": [
+      "S41"
+     ],
+     "evidence_status": "published_account"
+    },
+    {
+     "side": "市民",
+     "metric": "物件損害",
+     "value": 450000000,
+     "qualifier": "日元",
+     "scope": "18—19 日",
+     "note": "国会答辩（冈沢完治 1969-03-19）：「四億五千萬圆」。",
+     "sources": [
+      "S2"
+     ],
+     "evidence_status": "published_account"
+    }
+   ],
+   "outcome": "19 日 17:45 钟楼屋顶最后数人被捕，安田讲堂被制压；本乡构内 273（18 日）＋469（19 日）逮捕，检举总数据警视厅作 633，其中东大生 38 人。攻方达成「解除占据」目标，但抽调 900 人赴神田使正面攻勢在 18 日未能决著。",
+   "geography": "本乡构内（文京区本乡7-3-1）；正门（西）—银杏并木—安田讲堂—御殿下（东）为东西軸线。讲堂正面朝西，1·2 层在崖下、3 层以上在台地，正面玄関在 3 层（与 1 层高差約 6 m）。坐標为现代 OSM 輪廓与史料方位推定，不是 1969 年測量圖。",
+   "equipment": "攻方：放水车·装甲车·催泪弹·直升机·电锯·电钻·绳索·扩声器。守方：燃烧瓶·投石·硫酸·竹枪·石膏·手制火焰喷射器·角材·桌椅街垒·铁扉焊接。",
+   "modeling": "教学目標：比較（1）逐馆解除的順序對讲堂攻略时刻的影響；（2）13:30 抽调 900 人赴神田的代價；（3）停电停水与街垒修复的此消彼长。反事实每次只改一个条件，保留相同初始兵力与时刻表。",
+   "uncertainties": [
+    "各层人数与屋頂派系构成未詳（S34/S35 均缺）。",
+    "18 日中止时刻：S1 17:30／S34 17:10，并列。",
+    "馆内 397（S34）／374（S35）／「約 400」三說。",
+    "检举 633（S34）／983（S35）。",
+    "神田方面細节（街垒 10 處、75 人逮捕）仅 S1 一家，未见警方文书。"
+   ],
+   "points": [
+    "yasuda_hall",
+    "main_gate",
+    "akamon",
+    "ryuokomon",
+    "ikenohata",
+    "yayoi",
+    "houbun2",
+    "houbun1",
+    "reppinkan",
+    "igakubu_center",
+    "igakubu_honkan",
+    "kogakubu1",
+    "kyoyo_gym",
+    "ochanomizu"
+   ],
+   "time_step": "30分钟",
+   "geometry": {
+    "contact_km": 0.05,
+    "control_radius_km": 0.04,
+    "encircle_radius_km": 0.3,
+    "retreat_check_km": 0.4,
+    "sealed_ratio_encircled": 0.85,
+    "sealed_ratio_partial": 0.5,
+    "terrain_factor": 1.35
+   },
+   "preset_note": "几何參数按校園尺度（数百公尺）縮放；contact_km 只判「是否接觸」，不是射程。",
+   "parameter_status": "teaching_estimate"
+  }
+ ],
+ "evidence_levels": {
+  "published_account": "公开文献记载；未核原始命令或逐人名册",
+  "source_conflict": "来源有异文；不得并作唯一事实",
+  "teaching_window": "教学窗口；不是已核定历史时刻",
+  "unverified": "未核得；不得填零或反推确数"
+ }
+}

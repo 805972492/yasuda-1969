@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>安田讲堂攻防战（1969.01.18—01.19）· 战役推演</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#0d1117;--panel:#141b25;--panel2:#1b2431;--line:#26323f;--fg:#e8eef6;--dim:#8ea0b4;--police:#4f8fd0;--rebel:#c0563b;--mq:#c9a227;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.5 "Microsoft YaHei",system-ui,sans-serif}
+#app{display:flex;height:100%}
+#map{flex:1;min-width:0}
+#side{width:520px;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--line)}
+#side header{padding:10px 14px;border-bottom:1px solid var(--line)}
+#side header h1{font-size:15px;margin:0 0 2px}
+#side header .sub{color:var(--dim);font-size:11px}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel2)}
+.tabs button{flex:1;background:none;border:0;color:var(--dim);padding:8px 4px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.on{color:#fff;border-bottom-color:var(--rebel)}
+.pane{display:none;overflow:auto;padding:10px 14px;flex:1}
+.pane.on{display:block}
+.clockrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#clock{font-size:15px;font-weight:600;color:#ffd479;font-variant-numeric:tabular-nums}
+button.bt{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:5px 9px;font-size:12px;cursor:pointer}
+button.bt:hover{border-color:#3d5064}
+button.bt:disabled{opacity:.35;cursor:not-allowed}
+button.bt.on{background:#2a3a4c;border-color:#4a6683}
+.zones{display:flex;gap:6px;margin:6px 0 10px}
+.side-toggle{display:flex;gap:6px;margin:6px 0 10px}
+h3{font-size:12px;color:var(--dim);margin:12px 0 5px;font-weight:600;letter-spacing:.04em}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th,td{text-align:left;padding:3px 4px;border-bottom:1px solid #1e2836;vertical-align:top}
+th{color:var(--dim);font-weight:500}
+.unit{display:flex;gap:6px;align-items:center;padding:4px 3px;border-radius:4px;cursor:pointer;font-size:12px}
+.unit:hover{background:#1b2534}
+.unit.sel{background:#243346;outline:1px solid #3d5a7a}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.meta{color:var(--dim);font-size:10.5px}
+#log{font-size:11.5px;max-height:230px;overflow:auto;border-top:1px solid var(--line);padding-top:6px}
+.ev{display:flex;gap:6px;margin:3px 0;font-size:11.5px}
+.ev .tm{color:#ffd479;flex:none;font-variant-numeric:tabular-nums}
+.ev.rec .tm{color:#7fd1a0}
+.ev.warn{color:#ffb4a2}
+.legend{position:absolute;left:10px;bottom:10px;z-index:600;background:rgba(13,17,23,.82);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:11px;line-height:1.7}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+#toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:700;background:rgba(13,17,23,.9);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;display:none}
+.badge{display:inline-block;padding:0 5px;border-radius:8px;background:#233043;color:#a9c0d6;font-size:10px;margin-left:4px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"><div class="legend" id="legend"></div><div id="toast"></div></div>
+  <aside id="side">
+    <header>
+      <h1>安田讲堂攻防战 · 战役推演</h1>
+      <div class="sub">1969-01-18 06:30 → 01-20 06:00／30 分钟一回合／数据：东大《纷争日志 第4卷》、国会会议录、岛泰三、小熊英二、犯罪白书</div>
+    </header>
+    <div class="tabs">
+      <button data-p="sim" class="on">推演</button>
+      <button data-p="ledger">台账</button>
+      <button data-p="struct">结构</button>
+      <button data-p="report">战报</button>
+      <button data-p="events">事件</button>
+      <button data-p="figures">数字</button>
+      <button data-p="replay">复盘</button>
+      <button data-p="doc">说明</button>
+    </div>
+
+    <div class="pane on" id="pane-sim">
+      <div class="clockrow"><b id="clock">—</b><span class="badge" id="modebadge">剧本</span></div>
+      <button class="bt" id="btnStep">推进 1 步</button>
+      <button class="bt" id="btnAuto">自动</button>
+      <button class="bt" id="btnReset">重置</button>
+      <button class="bt" id="btnMode">切到自由推演</button>
+      <div class="zones" id="zones"></div>
+      <div class="side-toggle" id="sides"></div>
+
+      <h3>安田讲堂 · 逐层（守／攻）</h3>
+      <div class="meta">点一层＝选中该层；自由推演时可在下面直接对该层下令（守方：加固 / 反击 / 撤离 / 增援；攻方：定向突击 / 压制）。</div>
+      <table id="floors"></table>
+      <div id="floorops" style="margin-top:6px"></div>
+
+      <h3>选中编组 · 下命令</h3>
+      <div class="meta" id="selinfo">先在下面点一个编组</div>
+      <div id="orders" style="margin-top:6px"></div>
+
+      <h3>我方可控编组</h3>
+      <div id="units"></div>
+
+      <h3>战报</h3>
+      <div id="log"></div>
+    </div>
+
+    <div class="pane" id="pane-ledger">
+      <h3>人员·装备·士气台账</h3>
+      <div class="meta">人数随战斗、被捕、援军变化；「完整性」列标出可疑增减（对齐上游 integrity 检查）。</div>
+      <table id="ledger"></table>
+    </div>
+    <div class="pane" id="pane-struct">
+      <h3>安田讲堂 · 建筑结构（立面分层）</h3>
+      <div class="meta">地下 1 层 ＋ 地上 5 层 ＋ 钟塔 6—9 层；延床 6,990㎡、高 39.7m。3 层以上建在台地上，1—2 层在崖下，正面玄关开在 3 层，3 层与 1 层高差约 6m。正面朝西（正门·银杏并木），背面朝东（御殿下崖下）。1969 年座位：3 层 961 ＋ 4 层 777 ＝ 1,738 席。</div>
+      <div id="structmap" style="margin:8px 0"></div>
+      <div class="meta" id="structnote"></div>
+      <div style="margin-top:8px">
+        <button class="bt" onclick="mergeUnits()">合并本战区同阵营编组</button>
+        <button class="bt" onclick="if(selFloor)floorMergeOrgs(selFloor)">合并选中层各派</button>
+        <button class="bt" onclick="if(selFloor)floorMergeUp(selFloor)">把上一层并入选中层</button>
+      </div>
+    </div>
+    <div class="pane" id="pane-report">
+      <h3>战报</h3>
+      <div class="meta">每回合自动记一条「回合摘要」；也可以接入 DeepSeek API，用真实状态生成一份参谋部口吻的战报。</div>
+      <div id="apibox" style="margin:8px 0;padding:8px;border:1px solid #26323f;border-radius:6px;background:#111822">
+        <div class="meta" style="margin-bottom:4px">API（只存本机 localStorage）</div>
+        <input id="apiBase" placeholder="https://api.deepseek.com" style="width:100%;margin-bottom:4px;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">
+        <input id="apiModel" placeholder="deepseek-v4-flash" style="width:100%;margin-bottom:4px;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">
+        <input id="apiKey" type="password" placeholder="sk-..." style="width:100%;margin-bottom:6px;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">
+        <button class="bt" id="btnAI">生成本回合战报（API）</button>
+        <button class="bt" id="btnAIAuto">每回合自动生成</button>
+        <span class="meta" id="apistate"></span>
+      </div>
+      <div id="reports"></div>
+      <h3>回合摘要（规则自动）</h3>
+      <div id="digest"></div>
+    </div>
+    <div class="pane" id="pane-events"><h3>史料事件（点到即定位）</h3><div id="evlist"></div></div>
+    <div class="pane" id="pane-figures"><h3>官方数字与异文</h3><div id="figlist"></div></div>
+    <div class="pane" id="pane-replay"><h3>复盘：每次易手</h3><div id="replaylist"></div></div>
+    <div class="pane" id="pane-doc"><div id="docbox"></div></div>
+  </aside>
+</div>
+
+<script id="pack" type="application/json">__PACK__</script>
+<script id="geo" type="application/json">__GEO__</script>
+<script>
+const PACK = JSON.parse(document.getElementById('pack').textContent);
+const GEO  = JSON.parse(document.getElementById('geo').textContent);
+const SC = PACK.scenario, G = SC.geometry;
+const ZONES = PACK.zones || [{id:'本乡',name:'本乡构内',lat:35.7129,lng:139.7618,zoom:17}];
+const T0 = 390, T1 = 3240, STEP = 30;   // 绝对分钟（自 1969-01-18 00:00）
+const COL = {'机动队':'#4f8fd0','全共斗':'#c0563b','反帝学评':'#d98b4a','社学同':'#a8624f',
+             '中核派':'#b0442f','社学同 ML派':'#c9803f','革马派':'#8e6bb5','民青':'#c9a227','明大共斗':'#8f6b3f'};
+const REBEL = new Set(['全共斗','反帝学评','社学同','中核派','社学同 ML派','革马派','明大共斗']);
+const sideOf = s => s==='机动队' ? 'police' : (s==='民青' ? 'mingqing' : 'rebel');
+const fmt = m => { const d = new Date(1969,0,18,0,0,0); d.setMinutes(d.getMinutes()+m);
+  const p = n => String(n).padStart(2,'0');
+  return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); };
+
+function dist(a, b){                       // km（球面近似）
+  const R = 6371, ra = Math.PI/180;
+  const dLat = (b.lat-a.lat)*ra, dLng = (b.lng-a.lng)*ra;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*ra)*Math.cos(b.lat*ra)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+// ---------- 状态 ----------
+let S = null, selUnit = null, selFloor = null, mode = 'script', playerSide = '全共斗', playing = false, timer = null, curZone = '本乡';
+
+function fresh(){
+  const builds = JSON.parse(JSON.stringify(PACK.buildings));
+  S = { t:T0, turn:0, mode:mode, playerSide:playerSide,
+        sites: builds, floors: JSON.parse(JSON.stringify(PACK.floors0)),
+        capBySide:{}, arrests:0, captured:0,
+        units: PACK.forces.map((f,i)=>({...f, idx:i, cur:{lat:f.lat,lng:f.lng},
+            n0:f.n, n:f.n, losses:0, morale:70, supply:100, order:null, target:null,
+            alive:(f.n===null||f.n>0), zone:f.zone||'本乡'})),
+        log:[], flags:[], flips:[], done:new Set(), auto:false,
+        orders:0, digest:[], reports:[], autoAI:false };
+  S.units.forEach(u=>{ if(u.side==='机动队') S.capBySide[u.idx]='police'; });
+  log('sys','推演开始：1969-01-18 06:30。剧本模式按史料推进；切「自由推演」后由你指挥「'+playerSide+'」。');
+}
+function log(cls, txt){
+  S.log.push({cls, t:S.t, txt});
+  if(S.log.length>500) S.log.shift();
+  const box = $('log'); if(box){ const d=document.createElement('div'); d.className='ev '+cls;
+    d.innerHTML = '<span class="tm">'+fmt(S.t)+'</span><span>'+txt+'</span>'; box.appendChild(d); box.scrollTop=1e9; }
+}
+function toast(t){ const el=$('toast'); el.textContent=t; el.style.display='block'; clearTimeout(el._h); el._h=setTimeout(()=>el.style.display='none',1600); }
+const $ = id => document.getElementById(id);
+
+// ---------- 地图 ----------
+const map = L.map('map',{zoomControl:true,zoomSnap:.5,maxZoom:18,minZoom:13}).setView([35.7129,139.7618],17);
+const gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{maxZoom:19,attribution:'国土地理院'}).addTo(map);
+const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+L.control.layers({'卫星（地理院）':gsi,'OSM':osm},null,{position:'topleft'}).addTo(map);
+if(GEO && GEO.features) L.geoJSON(GEO,{style:()=>({color:'#3a4a5c',weight:1,fillColor:'#2a3646',fillOpacity:.16})}).addTo(map);
+const bLayer = L.layerGroup().addTo(map), uLayer = L.layerGroup().addTo(map);
+map.on('zoomend moveend', ()=>{ if(S) draw(); });   // 缩放后重算标签偏移（标签按像素避让）
+
+function shortName(n){ return n.replace(/（.*?）/g,'').replace(/机动队/,'机').slice(0,9); }
+const HALL = {lat:35.713428, lng:139.762297};
+function holderColor(h){ return COL[h]|| (h==='机动队'?'#4f8fd0':'#8894a4'); }
+function holderLabel(k){ const x = S.floors[k]; return (x && x.mix) ? x.holder+'＋'+x.mix : (x ? x.holder : ''); }
+function mpp(lat,z){ return 156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); }
+function hallBrief(){
+  const held = ['1','2','3','4','5','6'].filter(k=>S.floors[k].holder!=='机动队');
+  if(!held.length) return '已全面制压';
+  const f = held[0], n = S.floors[f].n;
+  return '守 '+held.join('/')+'F｜'+f+'F '+(n===null?'人数未详':n+' 人');
+}
+
+// 标签避让：按屏幕像素判重（含据点圆与编组点），重叠就跳过
+function labelFree(placed, x, y, w, h){
+  return placed.every(p=> !(x < p.x + p.w + 3 && x + w + 3 > p.x && y < p.y + p.h + 2 && y + h + 2 > p.y));
+}
+function draw(){
+  bLayer.clearLayers(); uLayer.clearLayers();
+  const z = map.getZoom(), placed = [];
+  const px = (lat,lng)=>map.latLngToContainerPoint([lat,lng]);
+  const occ = (lat,lng,rpx)=>{ const p = px(lat,lng); placed.push({x:p.x-rpx,y:p.y-rpx,w:2*rpx,h:2*rpx}); };
+  // 据点（圆＋tooltip）
+  S.sites.forEach(b=>{
+    const c = holderColor(b.holder);
+    const r = b.id==='yasuda_hall' ? 80 : 36;
+    const tip = b.name+'｜'+b.holder+(b.floors?'｜逐层见右栏':(b.str===null?'｜兵 未详':'｜兵 '+b.str+' 人')+'｜街垒 '+Math.max(0,Math.round(b.barrier)));
+    L.circle([b.lat,b.lng],{radius:r,color:c,weight:b.id==='yasuda_hall'?2:1.4,
+      fillColor:c,fillOpacity:b.id==='yasuda_hall'?.16:.11}).bindTooltip(tip,{sticky:true}).addTo(bLayer);
+    occ(b.lat,b.lng, r/mpp(b.lat,z)+2);
+    if(S.t>=800 && sideOf(b.holder)!=='police' && b.zone==='本乡')
+      L.polyline([[35.71294,139.75966],[b.lat,b.lng]],{color:'#4f8fd0',weight:.8,dashArray:'4 6',opacity:.3}).addTo(bLayer);
+  });
+  // 编组点
+  S.units.filter(u=>u.alive).forEach(u=>{
+    const c = COL[u.sect]||COL[u.side]||'#888';
+    L.circleMarker([u.cur.lat,u.cur.lng],{radius:7,color:'#0d1117',weight:1.4,fillColor:c,fillOpacity:.95})
+      .bindTooltip(u.unit+'｜'+u.side+(u.sect&&u.sect!==u.side?'（'+u.sect+'）':'')+'｜'+(u.n===null?'人数未详':u.n+(u.nunit||'人'))
+        +'｜士气 '+Math.round(u.morale)+'｜补给 '+Math.round(u.supply),{sticky:true}).addTo(uLayer);
+    occ(u.cur.lat,u.cur.lng,9);
+  });
+  if(z < 16) return;
+  // 标签：第一行「地点／番号」，第二行「组织＋兵力」。
+  // 每个标签依次试「上方／更上方／下方」三个位置，都不行才放弃（信息退回 tooltip）；
+  // 位置被挤到 60px 以外时画一条细引线，避免「标签飘着不知道是谁的」。
+  const mk = (lat,lng,l1,l2,col,cyCands)=>{
+    const p = px(lat,lng);
+    const w = Math.max(l1.length*12.2, l2.length*8.4) + 12, h = 30;
+    for(const cy0 of cyCands){
+      const cy = p.y + cy0;
+      const x = p.x - w/2, y = cy - h/2;
+      if(!labelFree(placed,x,y,w,h)) continue;
+      placed.push({x,y,w,h});
+      if(Math.abs(cy0) > 60){
+        const edge = map.containerPointToLatLng([p.x, cy + (cy0<0 ? h/2 : -h/2)]);
+        L.polyline([[lat,lng],[edge.lat,edge.lng]],{color:col,weight:.8,opacity:.55,dashArray:'2 3'}).addTo(bLayer);
+      }
+      const html = '<div style="font:11px/1.25 Microsoft YaHei;white-space:nowrap;background:rgba(13,17,23,.82);'
+        + 'border:1px solid rgba(120,140,160,.40);padding:1px 4px;border-radius:3px">'
+        + '<div style="color:'+col+';font-weight:600">'+l1+'</div>'
+        + '<div style="color:#a9bacd;font-size:10px">'+l2+'</div></div>';
+      L.marker([lat,lng],{icon:L.divIcon({className:'',html:html,iconSize:[w,h],iconAnchor:[w/2, h/2 - cy0]}),interactive:false}).addTo(bLayer);
+      return true;
+    }
+    return false;
+  };
+  const above = (rpx)=>[-(rpx+8+15), -(rpx+8+15+32), -(rpx+8+15+64), (rpx+8+15), (rpx+8+15+32)];
+  const hall = S.sites.find(b=>b.id==='yasuda_hall');
+  if(hall){
+    const rpx = 80/mpp(hall.lat,z);
+    mk(hall.lat,hall.lng,hall.name,hallBrief(),holderColor(hall.holder),above(rpx));
+  }
+  S.sites.filter(b=>b.id!=='yasuda_hall' && b.zone===curZone)
+    .sort((a,b)=>(b.str||0)-(a.str||0))
+    .forEach(b=>mk(b.lat,b.lng,b.name, b.holder+(b.str===null?'｜未详':'｜'+b.str+' 人'),
+      holderColor(b.holder), above(36/mpp(b.lat,z))));
+  if(z >= 17){
+    S.units.filter(u=>u.alive && u.zone===curZone).sort((a,b)=>(b.n||0)-(a.n||0)).forEach(u=>{
+      const t2 = (u.sect||u.side)+(u.n===null?'｜未详':'｜'+u.n+(u.nunit||'人'));
+      mk(u.cur.lat,u.cur.lng,shortName(u.unit),t2,(COL[u.sect]||COL[u.side]||'#888'),[-14,-40,22,48]);
+    });
+  }
+}
+
+// ---------- 能力（对齐上游 capabilities）----------
+// 直升机是「空中支援平台」：能侦察、能撒催泪液，但没有步兵去占楼、抓人，所以不给 assault。
+function caps(u){
+  if(u.side==='机动队'){
+    if(u.unit.includes('直升机')) return ['recon','fire','rest'];
+    if(u.unit.includes('私服')) return ['recon','rest'];
+    return ['assault','fire','rest','encircle','floor','move'];
+  }
+  if(u.side==='民青') return ['defend','counter'];
+  return ['defend','repair','attack','move','counter','retreat','rest'];
+}
+function powerOf(u){
+  let base = u.side==='机动队' ? 26 : (u.side==='民青' ? 11 : 15);
+  if(u.unit.includes('装甲')||u.unit.includes('放水')) base = 34;
+  if(u.unit.includes('直升机')) base = 14;                       // 空中支援：只压街垒
+  const m = .55 + u.morale/180, sp = u.supply<20 ? .55 : 1;
+  const n = (u.n===null?300:u.n);
+  const size = Math.max(.7, Math.min(2.2, Math.sqrt(n/500)));   // 合并后人多，威力按 √n 放大
+  return base*m*sp*size/(G.terrain_factor||1);
+}
+
+// ---------- 回合 ----------
+function step(){
+  if(S.t+STEP>T1){ toast('已到收束时刻（1/20 06:00）'); return; }
+  const before = S.log.length;
+  S.t += STEP; S.turn++;
+  if(mode==='script') applyHist();
+  aiMingqing();
+  if(mode==='free' && playerSide!=='机动队') aiPolice();   // 玩家自己指挥机动队时，AI 不再代令
+  execOrders();
+  upkeep();
+  integrity();
+  pushDigest(before);
+  render();
+  if(S.autoAI && (S.turn % 2 === 0)) callAI();
+}
+function applyHist(){
+  HIST.forEach(h=>{
+    const [tm, kind, arg, opt] = h;
+    if(S.t < tm || S.done.has(h)) return;
+    S.done.add(h);
+    if(kind==='flip') flipSite(arg, '历史', opt);
+    else if(kind==='floor') flipFloor(arg);
+    else if(kind==='log') log('sys', arg);
+  });
+}
+function flipFloor(f){
+  const x = S.floors[f];
+  if(!x) return;
+  x.holder='机动队'; S.arrests += (x.n||0); x.n=0;
+  log('sys','【史】讲堂 '+f+'F 被机动队制压。');
+  S.flips.push({t:S.t, txt:'安田讲堂 '+f+'F → 机动队'});
+  if([1,2,3,4,5,6].every(k=>S.floors[k].holder==='机动队')){
+    const hall = S.sites.find(b=>b.id==='yasuda_hall');
+    if(hall && hall.holder!=='机动队'){ hall.holder='机动队'; log('warn','【史】安田讲堂全面制压（6F 钟楼失守）。'); S.flips.push({t:S.t,txt:'安田讲堂 → 全面制压'}); }
+  }
+}
+function flipSite(id, src, verb){
+  const b = S.sites.find(x=>x.id===id); if(!b) return;
+  const prev = b.holder, n = b.str||0;
+  const tag = src==='历史' ? '【史】' : '【推演】';
+  const noArrest = !!verb && verb.indexOf('无人')>=0;
+  b.holder = '机动队'; b.str = 0;
+  if(noArrest){
+    log(src==='历史'?'sys':'warn', tag+b.name+'：'+verb+'（原 '+prev+'，无人被捕）。');
+  } else {
+    S.captured += 1; S.arrests += n;
+    log(src==='历史'?'sys':'warn', tag+b.name+' 被机动队制压（'+(n?n+' 人被捕':'馆内无人')+'）。');
+  }
+  S.flips.push({t:S.t, txt:b.name+'：'+prev+' → 机动队'+(verb?'（'+verb+'）':'')});
+}
+
+function aiMingqing(){
+  S.sites.filter(b=>b.holder==='民青').forEach(b=>{ b.barrier = Math.min(100, b.barrier+4); });
+  S.units.filter(u=>u.alive && u.side==='民青').forEach(u=>{
+    const tgt = S.units.filter(x=>x.alive && REBEL.has(x.side) && dist(x.cur,u.cur)<=0.06);
+    if(tgt.length){ const v=tgt[0]; v.n = Math.max(0,(v.n||0)-4); v.morale=Math.max(10,v.morale-5);
+      log('warn','民青 '+u.unit+' 反击：'+v.unit+' −4 人（士气 −5）。');
+      if(v.n===0){ v.alive=false; log('warn',v.unit+' 溃散。'); } }
+  });
+}
+function aiPolice(){
+  if(S.t < 780) return;
+  S.units.filter(u=>u.alive && u.side==='机动队' && !u.order).forEach(u=>{
+    // 警方只攻全共斗系据点；民青据点在史实里受警方保护，不在攻击清单内
+    const tgt = S.sites.filter(b=>REBEL.has(b.holder) && b.zone===u.zone)
+      .sort((a,b)=>dist(u.cur,a)-dist(u.cur,b))[0];
+    if(tgt){ u.order = {kind:'assault', id:tgt.id}; }
+  });
+}
+
+function execOrders(){
+  S.units.filter(u=>u.alive && u.order).forEach(u=>{
+    const o = u.order;
+    if(!caps(u).includes(o.kind)){ log('warn','回执：'+u.unit+' 不具备「'+o.kind+'」能力，命令退回。'); u.order=null; return; }
+    if(o.kind==='assault'||o.kind==='fire'||o.kind==='attack'){ engage(u, o.id, o.kind==='fire'?.62:1); u.supply=Math.max(0,u.supply-6); }
+    else if(o.kind==='recon'){ recon(u); u.order=null; u.supply=Math.max(0,u.supply-2); }
+    else if(o.kind==='floor'){ floorEngage(u, o.f); u.supply=Math.max(0,u.supply-6); }
+    else if(o.kind==='encircle'){ encircle(u); u.supply=Math.max(0,u.supply-3); }
+    else if(o.kind==='repair'||o.kind==='defend'){ hold(u, o.kind); u.supply=Math.max(0,u.supply-2); }
+    else if(o.kind==='counter'){ counter(u); u.supply=Math.max(0,u.supply-4); }
+    else if(o.kind==='move'){ moveTo(u,o.id); u.supply=Math.max(0,u.supply-3); }
+    else if(o.kind==='retreat'){ retreat(u); }
+    else if(o.kind==='rest'){ u.morale=Math.min(100,u.morale+6); u.supply=Math.min(100,u.supply+8); }
+  });
+}
+function hold(u, kind){
+  const b = S.sites.find(x=>sideOf(x.holder)===sideOf(u.side) && dist(u.cur,x)<=0.08);
+  if(!b) { log('warn','回执：'+shortName(u.unit)+' 附近无本方据点，无法加固。'); return; }
+  if(kind==='repair' && b.sealedUntil>=S.turn){ log('warn','回执：'+b.name+' 正被包围，补给断了，无法修补街垒。'); return; }
+  const add = kind==='repair' ? 9 : 5;
+  if(b.floors){
+    const f = lowestFloor('rebel');
+    if(f){ S.floors[f].b = Math.min(100, S.floors[f].b+add); log('rec','回执：讲堂 '+f+'F 街垒 +'+add+'（'+Math.round(S.floors[f].b)+'）。'); }
+  } else { b.barrier = Math.min(100, b.barrier+add); log('rec','回执：'+b.name+' 街垒 +'+add+'（'+Math.round(b.barrier)+'）。'); }
+}
+function recon(u){
+  const foes = S.units.filter(x=>x.alive && sideOf(x.side)!==sideOf(u.side))
+    .map(x=>({x:x, d:dist(u.cur,x.cur)})).sort((a,b)=>a.d-b.d)[0];
+  const site = S.sites.filter(b=>REBEL.has(b.holder) && b.zone===u.zone)
+    .map(b=>({b:b, d:dist(u.cur,b)})).sort((a,b)=>a.d-b.d)[0];
+  log('rec','侦察：'+shortName(u.unit)+' 报告 '
+    +(foes?('最近敌编组 '+shortName(foes.x.unit)+'（'+Math.round(foes.d*1000)+' m）'):'附近无敌编组')
+    +'；'+(site?('本方尚未控制的据点 '+site.b.name+'（'+Math.round(site.d*1000)+' m）'):'本战区据点均已在手')+'。');
+  u.morale = Math.min(100, u.morale+2);
+}
+function sealedNear(u){
+  return S.sites.some(b=>b.sealedUntil>=S.turn && dist(u.cur,b)<=0.12);
+}
+function encircle(u){
+  const tgt = S.sites.filter(b=>sideOf(b.holder)!==sideOf(u.side) && dist(u.cur,b)<=0.25)
+    .sort((a,b)=>dist(u.cur,a)-dist(u.cur,b))[0];
+  if(!tgt){ log('warn','回执：'+shortName(u.unit)+' 250 m 内没有可包围的敌方据点。'); return; }
+  tgt.sealedUntil = S.turn + 2;
+  log('rec','包围：'+shortName(u.unit)+' 封住 '+tgt.name+' 的补给线（2 回合内守方不能修补街垒，反击威力减半）。');
+}
+function counter(u){
+  const foes = S.units.filter(x=>x.alive && sideOf(x.side)!==sideOf(u.side) && dist(u.cur,x.cur)<=0.09);
+  if(!foes.length){ log('warn','回执：'+shortName(u.unit)+' 周围 90 m 内无敌方，反击落空。'); return; }
+  foes.slice(0,2).forEach(f=>{
+    const dmg = Math.max(1, Math.round((u.side==='民青'?4:7) * (sealedNear(u)?0.5:1)));
+    if(f.n!==null) f.n = Math.max(0, f.n-dmg);
+    f.morale = Math.max(10, f.morale-8);
+    u.morale = Math.min(100, u.morale+2);
+    log('warn', u.side+' '+shortName(u.unit)+' 反击 '+shortName(f.unit)+'：−'+dmg+' 人。');
+    if(f.n===0){ f.alive=false; log('warn',f.unit+' 溃散。'); }
+  });
+}
+function retreat(u){
+  const home = ZONES.find(z=>z.name.includes(u.zone))||ZONES[0];
+  u.cur = {lat:home.lat, lng:home.lng};
+  u.morale = Math.max(20, u.morale-10);
+  u.order = null; u.target = null;                 // 撤一次就结束，不能每回合重复掉士气
+  log('warn', shortName(u.unit)+' 脱离接触，退往 '+u.zone+'（命令结束）。');
+}
+function moveTo(u, id){
+  const b = S.sites.find(x=>x.id===id); if(!b) return;
+  const d = dist(u.cur, b);
+  const spd = u.side==='机动队' ? .55 : .45;      // km / 30min
+  if(d<=spd){ u.cur={lat:b.lat,lng:b.lng}; u.zone=b.zone; log('rec','回执：'+shortName(u.unit)+' 已到达 '+b.name+'。'); u.order=null; }
+  else { const r=spd/d; u.cur={lat:u.cur.lat+(b.lat-u.cur.lat)*r, lng:u.cur.lng+(b.lng-u.cur.lng)*r}; }
+}
+function engage(u, siteId, mult){
+  const b = S.sites.find(x=>x.id===siteId); if(!b) return;
+  const d = dist(u.cur,b);
+  const reach = (G.contact_km||.05)+0.10;
+  if(d > reach){                                  // 未接触：本回合只机动，命令保留
+    if(!u.target || u.target!==siteId){ u.target=siteId; log('rec','回执：'+shortName(u.unit)+' 向 '+b.name+' 机动（距离 '+Math.round(d*1000)+' m）。'); }
+    const spd = u.side==='机动队' ? .55 : .45;     // km / 30min
+    const r = Math.min(1, spd/d);
+    u.cur = {lat:u.cur.lat+(b.lat-u.cur.lat)*r, lng:u.cur.lng+(b.lng-u.cur.lng)*r};
+    return;
+  }
+  const pw = powerOf(u)*mult;
+  if(b.id==='yasuda_hall'){ attackHall(u,pw); return; }
+  if(sideOf(b.holder)===sideOf(u.side)){ log('warn','回执：'+b.name+' 已在本方控制下。'); u.order=null; return; }
+  b.barrier -= pw;
+  if(b.barrier<=0){
+    if(u.nunit==='架'){                      // 空中平台只能压制：没有地面分队进去占楼、抓人
+      b.barrier = 8;
+      log('rec','空中支援把 '+b.name+' 街垒压到 8，但直升机不能占领——须地面部队进入。');
+      u.order=null; u.target=null; return;
+    }
+    const prev=b.holder;
+    b.holder = u.side; b.barrier = 25;
+    S.arrests += Math.round((b.str||0)*0.5); b.str = Math.round((b.str||0)*0.5);
+    log('warn', u.side+' 制压 '+b.name+'（原 '+prev+'）。');
+    S.flips.push({t:S.t, txt:b.name+'：'+prev+' → '+u.side});
+    u.order=null; u.target=null;
+  } else {
+    log('rec','攻 '+b.name+'：街垒 '+Math.round(b.barrier)+'（剩）。');
+  }
+}
+function floorEngage(u, f){
+  const d = dist(u.cur, HALL), reach = (G.contact_km||.05)+0.13;
+  if(d > reach){
+    const spd = .55, r = Math.min(1, spd/d);
+    u.cur = {lat:u.cur.lat+(HALL.lat-u.cur.lat)*r, lng:u.cur.lng+(HALL.lng-u.cur.lng)*r};
+    log('rec','回执：'+u.unit+' 向讲堂机动（距 '+Math.round(d*1000)+' m），准备突击 '+f+'F。');
+    return;
+  }
+  const x = S.floors[f];
+  if(x.holder==='机动队'){ log('rec','回执：'+f+'F 已在机动队手上，改推下一层。'); u.order={kind:'assault',id:'yasuda_hall'}; return; }
+  const lower = [1,2,3,4,5].filter(k=>+k<+f).some(k=>S.floors[k].holder!=='机动队');
+  const eff = lower ? 0.55 : 1.0;                       // 下层未清：正面受阻，只能部分施压
+  const pw = powerOf(u)*eff;
+  if(lower) log('warn','定向突击 '+f+'F 受阻（下层仍在守方），'+u.unit+' 只能逐层推进。');
+  x.b -= pw;
+  if(x.b<=0){
+    const prev = x.holder;
+    x.holder = u.side; S.arrests += (x.n||0); x.n=0; x.b=0; x.vacant=false;   // 易手后旧街垒清零，不留负数
+    log('warn', u.side+' 清 '+f+'F（原 '+prev+'）。');
+    S.flips.push({t:S.t, txt:'安田讲堂 '+f+'F：'+prev+' → '+u.side});
+    if([1,2,3,4,5,6].every(k=>S.floors[k].holder==='机动队')){
+      const hall=S.sites.find(b=>b.id==='yasuda_hall'); hall.holder='机动队';
+      log('warn','安田讲堂全面制压（6F 钟楼失守）。'); S.flips.push({t:S.t,txt:'安田讲堂 → 全面制压'});
+    }
+    u.order = {kind:'assault', id:'yasuda_hall'};
+  } else log('rec','定向攻 '+f+'F：街垒 '+Math.round(x.b)+'（剩）。');
+}
+function attackHall(u, pw){
+  if(u.nunit==='架'){                       // 空中平台：只能压街垒，不能占楼层
+    const f0 = lowestFloor('rebel');
+    if(!f0){ u.order = null; return; }
+    const x0 = S.floors[f0];
+    if(x0.b <= 8){ log('rec','直升机：'+f0+'F 街垒已压到 8，空中火力不再有效。'); u.order = null; return; }
+    x0.b = Math.max(8, x0.b - pw);
+    log('rec','直升机对讲堂 '+f0+'F 施压（街垒 '+Math.round(x0.b)+'），空中平台不能占领楼层。');
+    return;
+  }
+  const f = lowestFloor(u.side==='机动队'?'rebel':'police');
+  if(!f){ const hall=S.sites.find(b=>b.id==='yasuda_hall'); if(hall.holder!=='机动队'){hall.holder='机动队'; log('warn','安田讲堂全面制压。');} u.order=null; return; }
+  const x = S.floors[f];
+  x.b -= (sideOf(x.holder)==='rebel'? pw : pw);
+  if(x.b<=0){
+    const prev = x.holder;
+    x.holder = u.side; S.arrests += (x.n||0); x.n=0; x.b=0;   // 易手后街垒清零
+    log('warn', u.side+' 清 '+f+'F（原 '+prev+'）。');
+    S.flips.push({t:S.t, txt:'安田讲堂 '+f+'F：'+prev+' → '+u.side});
+    if([1,2,3,4,5,6].every(k=>S.floors[k].holder==='机动队')){
+      const hall=S.sites.find(b=>b.id==='yasuda_hall'); hall.holder='机动队';
+      log('warn','安田讲堂全面制压（6F 钟楼失守）。'); S.flips.push({t:S.t,txt:'安田讲堂 → 全面制压'});
+    }
+  } else log('rec','攻讲堂 '+f+'F：街垒 '+Math.round(x.b)+'（剩）。');
+}
+function lowestFloor(who){
+  for(const k of ['1','2','3','4','5','6']){
+    const h = S.floors[k].holder;
+    if(who==='rebel' ? h!=='机动队' : !REBEL.has(h)) return k;
+  }
+  return null;
+}
+function upkeep(){
+  S.units.filter(u=>u.alive).forEach(u=>{
+    if(u.side==='机动队'||u.side==='全共斗') u.supply = Math.min(100,u.supply+2);
+    if(u.morale<40 && u.n!==null && u.n>0 && Math.random()<.12){ u.n=Math.max(0,u.n-2); u.losses+=2; log('warn',shortName(u.unit)+' 士气低落，逃亡 2 人。'); }
+    if(u.n!==null && u.n<=0){ u.alive=false; log('warn',u.unit+' 溃散。'); }
+  });
+}
+function integrity(){
+  S.units.forEach(u=>{
+    if(u.n===null) return;
+    if(u.n > u.n0){ S.flags.push({t:S.t, txt:u.unit+' 人数从 '+u.n0+' 增到 '+u.n+'（无援军记录）'}); u.n=u.n0; }
+  });
+  if(S.t !== T0 + S.turn*STEP) S.flags.push({t:S.t, txt:'时钟不一致：turn='+S.turn});
+}
+
+// ---------- 历史基线 ----------
+const HIST = [
+  [420,'flip','kogakubu1','解除封锁（馆内无人）'],
+  [430,'flip','rigaku1','解除封锁（馆内无人）'],
+  [440,'flip','igaku_c'],
+  [540,'flip','kyoiku','验证（无人被捕）'],       // 08:15 应待→09:15 令状→100 人一巡→11:20 验证終了
+  [540,'flip','houbun2'],      // 09:00 前后 革马 14 人屋顶全员被捕
+  [660,'flip','reppinkan'],
+  [700,'log','【史】11:40 法学部研究室 3 层突入；屋顶浇汽油，15:35 屋顶 121 人被逮捕。'],
+  [780,'log','【史】13:20 讲堂本格攻击开始；装甲车被燃烧瓶点燃。'],
+  [1055,'flip','houbou_ken'],  // 15:35 法研屋顶 121 人
+  [1860,'floor',1],
+  [2000,'log','【史】09:20 各阶阶段街垒加固；部队以绳索电钻切断机拆垒。'],
+  [2160,'floor',2],
+  [2215,'floor',3],
+  [2355,'floor',4],
+  [2430,'floor',5],
+  [2487,'floor',6]
+];
+
+// ---------- 渲染 ----------
+// ===== 逐层控制 =====
+function floorOpsButtons(){
+  if(mode!=='free' || !selFloor) return '';
+  const f = selFloor, x = S.floors[f];
+  if(playerSide==='全共斗'){
+    if(!REBEL.has(x.holder)) return '<span class="meta">'+f+'F 已在對方手上，无可下令的守备队。</span>';
+    return '<button class="bt" onclick="floorDefend(\''+f+'\')">加固 '+f+'F（+9 街垒）</button>'+
+           '<button class="bt" onclick="floorCounter(\''+f+'\')">'+f+'F 反击（近战）</button>'+
+           '<button class="bt" onclick="floorReinforce(\''+f+'\')">增援 '+f+'F（调 10 人）</button>'+
+           '<button class="bt" onclick="floorEvac(\''+f+'\')">撤离 '+f+'F（退上一层）</button>'+
+           (x.holder!=='全共斗'?'<button class="bt" onclick="floorMergeOrgs(\''+f+'\')">合并本层各派 → 全共斗</button>':'')+
+           (+f<6 && REBEL.has(S.floors[String(+f+1)].holder)?'<button class="bt" onclick="floorMergeUp(\''+f+'\')">把 '+(+f+1)+'F 并入 '+f+'F</button>':'');
+  }
+  const lowerCleared = [1,2,3,4,5].filter(k=>+k<+f).every(k=>S.floors[k].holder==='机动队');
+  return '<button class="bt" onclick="floorAssault(\''+f+'\')">定向突击 '+f+'F'+(lowerCleared?'':'（下层未清，受阻）')+'</button>'+
+         '<button class="bt" onclick="floorSuppress(\''+f+'\')">压制 '+f+'F（街垒 −12，不占地）</button>';
+}
+function needPoliceNear(){
+  const p = S.units.filter(u=>u.alive && u.side==='机动队').sort((a,b)=>dist(a.cur,HALL)-dist(b.cur,HALL))[0];
+  if(!p){ log('warn','没有可用的机动队编组。'); return null; }
+  if(dist(p.cur,HALL) > 0.12){ log('warn','机动队尚未接近讲堂（'+p.unit+' 距 '+Math.round(dist(p.cur,HALL)*1000)+' m），先突击。'); return null; }
+  return p;
+}
+function floorDefend(f){
+  const x=S.floors[f]; x.b=Math.min(120,x.b+9);
+  log('act','【令】'+f+'F 加固街垒 +9（现 '+Math.round(x.b)+'）。'); S.orders++;
+  render();
+}
+function floorCounter(f){
+  const p = needPoliceNear(); if(!p) return;
+  const dmg = 5 + Math.round(S.floors[f].b/20);
+  p.n = Math.max(0,(p.n||0)-dmg); p.morale = Math.max(10,p.morale-7);
+  log('act','【令】'+f+'F 守备队出击：'+p.unit+' −'+dmg+' 人、士气 −7。');
+  if(p.n===0){ p.alive=false; log('warn',p.unit+' 溃散。'); }
+  S.orders++; render(); draw();
+}
+function floorEvac(f){
+  const x=S.floors[f], nx=S.floors[String(+f+1)];
+  if(!nx){ log('warn',f+'F 之上已无楼层（6F 为钟楼）。'); return; }
+  if(nx.holder!=='全共斗' && !REBEL.has(nx.holder)){ log('warn','上一层（'+(+f+1)+'F）由其它派系控制，无法合并。'); }
+  nx.n = (nx.n||0) + (x.n||0); nx.b = Math.min(120, nx.b + Math.round(x.b*0.4));
+  if(nx.holder==='全共斗' || REBEL.has(nx.holder)) nx.holder = x.holder;
+  log('act','【令】'+f+'F 守备队（'+(x.n||0)+' 人）撤往 '+(+f+1)+'F，街垒部分转移。');
+  x.n = 0; x.b = 0; x.vacant = true;
+  S.orders++; render(); draw();
+}
+function floorReinforce(f){
+  const src = S.units.filter(u=>u.alive && REBEL.has(u.side) && u.zone===curZone && (u.n||0)>10)
+    .sort((a,b)=>dist(a.cur,HALL)-dist(b.cur,HALL))[0];
+  if(!src){ log('warn','本战区没有可抽调的全共斗编组（每队至少留 10 人）。'); return; }
+  src.n -= 10; S.floors[f].n = (S.floors[f].n||0) + 10;
+  log('act','【令】'+src.unit+' 抽调 10 人增援 '+f+'F。'); S.orders++; render(); draw();
+}
+function floorAssault(f){
+  const p = needPoliceNear(); if(!p) return;
+  const lowerCleared = [1,2,3,4,5].filter(k=>+k<+f).every(k=>S.floors[k].holder==='机动队');
+  if(!lowerCleared){ log('warn','定向突击 '+f+'F 受阻：下层仍在守方手上，'+(p.unit)+' 只能逐层推进。'); return; }
+  p.order = {kind:'floor', f:f}; log('act','【令】'+p.unit+' 定向突击 '+f+'F。'); render();
+}
+function floorSuppress(f){
+  const p = needPoliceNear(); if(!p) return;
+  const x=S.floors[f]; x.b=Math.max(0,x.b-12);
+  log('act','【令】'+p.unit+' 对 '+f+'F 压制（水炮/催泪）：街垒 −12（现 '+Math.round(x.b)+'），未占地。');
+  S.orders++; render(); draw();
+}
+// 合并：把同层不同组织并成一股，或把下一层抽上来；人多则威力按 √n 放大
+function floorMergeOrgs(f){
+  const x = S.floors[f];
+  if(!REBEL.has(x.holder)){ log('warn',f+'F 不在守方手上。'); return; }
+  if(x.holder==='全共斗'){ log('warn',f+'F 已是统一指挥（全共斗）。'); return; }
+  log('act','【令】'+f+'F 各派合流：'+x.holder+' 与同层部队统一由「全共斗」指挥（人数合并计）。');
+  x.holder='全共斗'; S.orders++; render();
+}
+function floorMergeUp(f){
+  const from = S.floors[String(+f+1)];      // 把上一层并到本层
+  const to = S.floors[f];
+  if(!from || !REBEL.has(from.holder) || !REBEL.has(to.holder)){ log('warn','上下两层必须都在守方手上才能合并。'); return; }
+  const known = (to.n===null?0:to.n) + (from.n===null?0:from.n);
+  const unknown = (to.n===null || from.n===null);
+  to.n = (known===0 && unknown) ? null : known;
+  to.b = Math.min(120, to.b + Math.round(from.b*0.5));
+  log('act','【令】'+(+f+1)+'F 守备队并入 '+f+'F（合计 '+(to.n===null?'人数未详':to.n+' 人')+'，街垒 '+Math.round(to.b)+'）。');
+  from.n = 0; from.b = 0; from.holder = '全共斗'; from.vacant = true;
+  S.orders++; render(); draw();
+}
+function mergeUnits(){
+  const zoneUnits = S.units.filter(u=>u.alive && u.zone===curZone && sideOf(u.side)===sideOf(playerSide));
+  if(zoneUnits.length<2){ log('warn','本战区本方编组不足两个，无法合并。'); return; }
+  const [a,b] = zoneUnits.sort((x,y)=>(y.n||0)-(x.n||0));
+  const na = a.n===null?0:a.n, nb = b.n===null?0:b.n;
+  if(na+nb<=0){ log('warn','这两个编组都没给出人数，只能合并番号，不改变威力。'); }
+  a.n = (a.n===null||b.n===null) ? null : na+nb;
+  a.n0 = (a.n0===null||b.n0===null) ? null : (a.n0+b.n0);
+  a.morale = Math.round((a.morale+b.morale)/2);
+  a.supply = Math.min(100, Math.round((a.supply+b.supply)/2));
+  a.unit = a.unit.replace(/（.*）/,'')+'＋'+shortName(b.unit);
+  b.alive = false;
+  log('act','【令】'+a.unit+' 合并完成：'+(a.n===null?'人数未详':a.n+' 人')+'，威力按 √n 放大。');
+  selUnit = a.idx; S.orders++; render(); draw();
+}
+
+// ===== 战报（规则摘要 + API） =====
+function pushDigest(beforeLen){
+  const lines = S.log.slice(beforeLen).map(l=>l.txt);
+  if(lines.length) S.digest.push({turn:S.turn, t:S.t, lines:lines});
+  if(S.digest.length>60) S.digest = S.digest.slice(-60);
+}
+function stateBrief(){
+  const fl = [1,2,3,4,5,6].map(k=>k+'F '+(S.floors[k].holder==='机动队'?'机动队':(holderLabel(k)+' '+(S.floors[k].n===null?'人数未详':S.floors[k].n+'人')))
+    +' 街垒'+Math.round(S.floors[k].b)).join('；');
+  const sites = S.sites.filter(b=>b.id!=='yasuda_hall').map(b=>b.name+'='+b.holder).join('、');
+  const units = S.units.filter(u=>u.alive).map(u=>u.unit+'('+u.side+','+(u.n===null?'人数未详':u.n+(u.nunit||'人'))+',士气'+Math.round(u.morale)+',补给'+Math.round(u.supply||0)+')').join('；');
+  return {t:fmt(S.t), turn:S.turn, floors:fl, sites:sites, units:units, arrests:S.arrests, captured:S.captured, orders:S.orders};
+}
+function digestText(n){
+  return S.digest.slice(-n).map(d=>'第'+d.turn+'回合('+fmt(d.t)+')：'+d.lines.join(' / ')).join('\n');
+}
+async function callAI(){
+  const base = ($('apiBase').value||'https://api.deepseek.com').replace(/\/$/,'');
+  const model = $('apiModel').value || 'deepseek-v4-flash';
+  const key = ($('apiKey').value||'').trim();
+  if(!key){ $('apistate').textContent = '请先填 API Key'; return; }
+  localStorage.setItem('yasuda_api', JSON.stringify({base:base, model:model, key:key}));
+  const st = stateBrief();
+  const sys = '你是 1969 年 1 月日本「安田讲堂攻防战」战役推演的参谋记录官。只依据我给的推演状态写战报，'
+    + '不得虚构未给出的数字、人名与部队；不确定就写「未详」。语言用简洁的中文军事通报口吻，'
+    + '分 3—5 句：当前时刻与回合、双方态势（按楼层/据点）、本回合发生了什么、下回合的判断。不超过 400 字。';
+  const user = '【状态】\n时刻：'+st.t+'（第 '+st.turn+' 回合）\n讲堂逐层：'+st.floors
+    + '\n各据点：'+st.sites+'\n在场编组：'+st.units+'\n被捕/清剿累计：'+st.arrests+' 人；制压据点 '+st.captured+' 处；已下命令 '+st.orders+' 条'
+    + '\n【最近回合摘要】\n'+(digestText(6)||'（暂无）');
+  $('apistate').textContent = '生成中…';
+  try{
+    const r = await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:model,messages:[{role:'system',content:sys},{role:'user',content:user}],temperature:0.7,max_tokens:2400})});
+    const txt = await r.text();
+    if(!r.ok){ $('apistate').textContent = 'API '+r.status+'：'+txt.slice(0,120); return; }
+    const j = JSON.parse(txt); const ch = (j.choices && j.choices[0]) || {}, msg = ch.message || {};
+    let out = (msg.content||'').trim();
+    if(!out && msg.reasoning_content) out = '（模型只返回了推理，增大 max_tokens 或换模型）';
+    if(ch.finish_reason==='length') out += '\n（注：本次生成触到 token 上限，末尾被截断——把模型换成非推理型或再点一次生成）';
+    pushReport(st.t, out, 'api');
+    $('apistate').textContent = '已生成（'+((j.usage&&j.usage.total_tokens)||'?')+' tokens）';
+  }catch(e){ $('apistate').textContent = '请求失败：'+e.message; }
+}
+function pushReport(when, txt, src){
+  S.reports.push({when:when, txt:txt, src:src});
+  if(S.reports.length>20) S.reports=S.reports.slice(-20);
+  renderReports();
+}
+function renderReports(){
+  $('reports').innerHTML = S.reports.slice().reverse().map(r=>
+    '<div style="margin:8px 0;padding:8px;border-left:3px solid '+(r.src==='api'?'#e08a3c':'#4f8fd0')+';background:#121a24">'+
+    '<div class="meta">'+(r.src==='api'?'API 战报':'规则战报')+' · '+r.when+'</div>'+
+    '<div style="white-space:pre-wrap;line-height:1.65">'+r.txt+'</div></div>').join('') || '<div class="meta">还没有战报。点上面的按钮生成。</div>';
+}
+function renderDigest(){
+  $('digest').innerHTML = S.digest.slice(-8).reverse().map(d=>
+    '<div style="margin:6px 0"><div class="meta">第 '+d.turn+' 回合 · '+fmt(d.t)+'</div><div>'+d.lines.map(x=>'· '+x).join('<br>')+'</div></div>'
+  ).join('') || '<div class="meta">尚无回合摘要。</div>';
+}
+
+function renderStructure(){
+  const el = $('structmap'); if(!el) return;
+  const H = k=>S.floors[k];
+  const band = (y,h,k,title)=>{
+    const x = H(k), c = holderColor(x.holder), unk = x.n===null;
+    return '<g>'+
+      '<rect x="150" y="'+y+'" width="170" height="'+h+'" fill="'+c+'" fill-opacity=".40" stroke="#93a8bd" stroke-width="1.2"/>'+
+      '<text x="235" y="'+(y+14)+'" fill="#ffffff" font-size="11.5" text-anchor="middle">'+k+'F　'+title+'</text>'+
+      '<text x="235" y="'+(y+27)+'" fill="#eaf3fb" font-size="9.5" text-anchor="middle">'+holderLabel(k)+'</text>'+
+      '<text x="235" y="'+(y+39)+'" fill="#c3d2e2" font-size="9" text-anchor="middle">'+(unk?'人数未详':x.n+' 人')+'｜街垒 '+Math.round(x.b)+'</text>'+
+    '</g>';
+  };
+  const svg =
+   '<svg viewBox="0 0 420 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;background:#0b1018;border-radius:6px">'+
+    '<rect x="0" y="0" width="420" height="560" fill="#0b1018"/>'+
+    '<path d="M0,190 L296,190 L420,325 L420,560 L0,560 Z" fill="#16241b"/>'+
+    '<path d="M296,190 L420,325 L420,560 L296,560 Z" fill="#111a14"/>'+
+    '<line x1="0" y1="190" x2="296" y2="190" stroke="#5c8f6c" stroke-width="1.5"/>'+
+    '<line x1="296" y1="190" x2="420" y2="325" stroke="#3f6b4c" stroke-width="1.5" stroke-dasharray="5 4"/>'+
+    '<text x="8" y="182" fill="#8fbf9a" font-size="11">本乡台地·正门侧（西）</text>'+
+    '<text x="414" y="352" fill="#7fa88b" font-size="11" text-anchor="end">崖下·御殿下侧（东）</text>'+
+    band(100,45,'5','机械室·仓库' )+
+    band(145,45,'4','大讲堂上部 777 席')+
+    band(190,45,'3','大讲堂 961 席＋回廊')+
+    band(235,45,'2','本部办公室')+
+    band(280,45,'1','本部办公室·校长室')+
+    '<rect x="140" y="325" width="156" height="28" fill="#2a3644" stroke="#4e6a86" stroke-dasharray="4 3"/>'+
+    '<text x="218" y="344" fill="#8fb0cd" font-size="10" text-anchor="middle">B1F　地下</text>'+
+    '<rect x="246" y="46" width="36" height="54" fill="'+holderColor(H('6').holder)+'" fill-opacity=".45" stroke="#a9c1d6"/>'+
+    '<circle cx="264" cy="34" r="8" fill="none" stroke="#e8d8a8" stroke-width="2"/>'+
+    '<line x1="264" y1="34" x2="264" y2="28" stroke="#e8d8a8" stroke-width="1.5"/>'+
+    '<text x="288" y="62" fill="#cfe0ef" font-size="10">9F 钟室</text>'+
+    '<text x="288" y="78" fill="#9fb4c8" font-size="10">6—8F 楼梯间</text>'+
+    '<text x="288" y="96" fill="'+holderColor(H('6').holder)+'" font-size="9.5">6F '+holderLabel('6')+' 街垒 '+Math.round(H('6').b)+'</text>'+
+    '<line x1="140" y1="196" x2="140" y2="232" stroke="#f0c96b" stroke-width="3"/>'+
+    '<text x="134" y="215" fill="#f0c96b" font-size="10.5" text-anchor="end">正门入口</text>'+
+    '<line x1="112" y1="190" x2="112" y2="325" stroke="#d08a5a" stroke-width="1.5" stroke-dasharray="4 3"/>'+
+    '<line x1="112" y1="190" x2="140" y2="190" stroke="#d08a5a" stroke-width="1"/>'+
+    '<line x1="112" y1="325" x2="140" y2="325" stroke="#d08a5a" stroke-width="1"/>'+
+    '<text x="106" y="252" fill="#e0a273" font-size="10.5" text-anchor="end">3F 与 1F</text>'+
+    '<text x="106" y="267" fill="#e0a273" font-size="10.5" text-anchor="end">高差约 6m</text>'+
+    '<text x="14" y="392" fill="#9fb4c8" font-size="10.5">※ 模式断面，层高与进深非实寸比。</text>'+
+    '<text x="14" y="412" fill="#d9c08a" font-size="10.5">※ 1969 年座位：3F 961 ＋ 4F 777 ＝ 1,738 席</text>'+
+    '<text x="14" y="430" fill="#9fb4c8" font-size="10.5">　 1990 年改修后 728＋416＝1,144 席。</text>'+
+    '<text x="14" y="452" fill="#9fb4c8" font-size="10.5">※ 1·2 层在 1969 年是本部办公室与校长室；</text>'+
+    '<text x="14" y="470" fill="#9fb4c8" font-size="10.5">　 校长室 1979 年本部栋建成后迁出。</text>'+
+    '<text x="14" y="492" fill="#9fb4c8" font-size="10.5">※ 大讲堂后部（东）为半圆形，3 层外墙由回廊环绕。</text>'+
+    '<text x="14" y="512" fill="#6f8aa3" font-size="9.5">※ 色块＝当前控制方；数字来自推演状态，非史料原值。</text>'+
+    '<text x="14" y="530" fill="#6f8aa3" font-size="9.5">依据：东大新闻 2025-11-06／东大 FOCUS〈不可思议的大讲堂〉／安田讲堂改修工程概要</text>'+
+   '</svg>';
+  el.innerHTML = svg;
+  const note = $('structnote');
+  if(note) note.textContent = '当前：'+fmt(S.t)+'　第 '+S.turn+' 回合　｜　制压据点 '+S.captured+' 处　｜　被捕/清剿 '+S.arrests+' 人　｜　点左侧楼层行可选中该层下令';
+}
+
+function render(){
+  $('clock').textContent = fmt(S.t)+'　第 '+S.turn+' 回合';
+  $('modebadge').textContent = mode==='script'?'剧本':'自由 · '+playerSide;
+  // floors（可点选，逐层下令）
+  let fh='';
+  ['6','5','4','3','2','1'].forEach(k=>{
+    const x=S.floors[k], c=holderColor(x.holder);
+    fh += '<tr data-f="'+k+'" class="'+(selFloor===k?'on':'')+'" style="cursor:pointer'+(selFloor===k?';background:#243346':'')+'">'+
+      '<td style="width:44px">'+k+'F'+(k==='6'?' 塔':'')+'</td>'+
+      '<td><span class="dot" style="background:'+c+';display:inline-block"></span> '+holderLabel(k)+'</td>'+
+      '<td>'+(x.n===null?'人数未详':x.n+' 人')+'</td><td>街垒 '+Math.round(x.b)+'</td></tr>';
+  });
+  $('floors').innerHTML = fh;
+  document.querySelectorAll('#floors tr').forEach(tr=>tr.onclick=()=>{ selFloor=tr.dataset.f; render(); });
+  const fo = $('floorops'); if(fo) fo.innerHTML = floorOpsButtons();
+  renderDigest(); renderReports(); renderStructure();
+  // units
+  let uh='';
+  S.units.forEach(u=>{
+    if(!u.alive && !(u.n0===0)) return;
+    // 同阵营即视为我方编组：全共斗指挥键可下令给反帝学评／社学同／中核派／革马／明大共斗等
+    if(sideOf(u.side) !== sideOf(playerSide)) return;
+    const c = COL[u.sect]||COL[u.side];
+    uh += '<div class="unit'+(selUnit===u.idx?' sel':'')+'" data-i="'+u.idx+'">'+
+      '<span class="dot" style="background:'+c+'"></span><div style="flex:1">'+u.unit+
+      '<div class="meta">'+u.zone+'｜'+(u.n===null?'未详':u.n+(u.nunit||'人'))+'｜士气 '+Math.round(u.morale)+'｜补给 '+Math.round(u.supply)+
+      (u.order?'｜命令 '+u.order.kind+(u.order.id?'·'+(S.sites.find(s=>s.id===u.order.id)||{}).name||u.order.id:''):'')+'</div></div></div>';
+  });
+  $('units').innerHTML = uh || '<div class="meta">无</div>';
+  document.querySelectorAll('#units .unit').forEach(el=>el.onclick=()=>{ selUnit=+el.dataset.i; render(); drawOrders(); });
+
+  // ledger
+  let lh='<tr><th>编组</th><th>阵营</th><th>人数</th><th>损失</th><th>士气</th><th>补给</th><th>命令</th></tr>';
+  S.units.forEach(u=>{ lh+='<tr><td>'+u.unit+'</td><td>'+(u.sect||u.side)+'</td><td>'+(u.n===null?'未详':u.n+(u.nunit||'人'))+
+    '</td><td>'+(u.losses||0)+'</td><td>'+Math.round(u.morale)+'</td><td>'+Math.round(u.supply)+'</td><td>'+(u.order?u.order.kind:'—')+'</td></tr>'; });
+  if(S.flags.length) lh+='<tr><td colspan="7" style="color:#ffb4a2">完整性告警 '+S.flags.length+' 条（见复盘）</td></tr>';
+  $('ledger').innerHTML = lh;
+
+  // replay
+  let rh='';
+  if(S.flags.length) rh += '<h3 style="color:#ffb4a2">完整性告警</h3>'+S.flags.map(f=>'<div class="ev warn"><span class="tm">'+fmt(f.t)+'</span><span>'+f.txt+'</span></div>').join('');
+  rh += '<h3>易手记录（'+S.flips.length+'）</h3>' + (S.flips.length? S.flips.map(f=>'<div class="ev"><span class="tm">'+fmt(f.t)+'</span><span>'+f.txt+'</span></div>').join('') : '<div class="meta">尚无</div>');
+  rh += '<h3>总计</h3><div class="meta">被捕/清剿人数（按编组人数累计）：'+S.arrests+'｜据点易手：'+S.flips.length+'｜完整性告警：'+S.flags.length+'</div>';
+  $('replaylist').innerHTML = rh;
+
+  draw();
+}
+function drawOrders(){
+  const u = selUnit!==null ? S.units[selUnit] : null;
+  if(!u || !u.alive){ $('selinfo').textContent='先在下面点一个编组'; $('orders').innerHTML=''; return; }
+  const cs = caps(u);
+  $('selinfo').textContent = u.unit+'｜'+u.zone+'｜'+cs.join(' / ');
+  const targets = S.sites.filter(b=>b.id!=='yasuda_hall' || true);
+  let html='';
+  const btn=(k,label,disabled)=>'<button class="bt" data-k="'+k+'" '+(disabled?'disabled':'')+'>'+label+'</button>';
+  if(cs.includes('assault')) html+=btn('assault','突击（选点）',false);
+  if(cs.includes('attack')) html+=btn('attack','出击（选点）',false);
+  if(cs.includes('fire')) html+=btn('fire','放水/催泪',false);
+  if(cs.includes('defend')) html+=btn('defend','死守加固',false);
+  if(cs.includes('repair')) html+=btn('repair','修补街垒 +9',false);
+  if(cs.includes('counter')) html+=btn('counter','反击附近',false);
+  if(cs.includes('move')) html+=btn('move','转移（选点）',false);
+  if(cs.includes('retreat')) html+=btn('retreat','撤退',false);
+  if(cs.includes('recon')) html+=btn('recon','侦察敌情',false);
+  if(cs.includes('rest')) html+=btn('rest','休整',false);
+  if(cs.includes('encircle')) html+=btn('encircle','包围',false);
+  html+='<div style="margin-top:6px"><select id="tgtsel" style="width:100%;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">'+
+    targets.map(b=>'<option value="'+b.id+'">'+b.name+'（'+b.holder+'）</option>').join('')+'</select></div>';
+  $('orders').innerHTML = html;
+  document.querySelectorAll('#orders button').forEach(el=>el.onclick=()=>{
+    const k = el.dataset.k, tid = $('tgtsel')?$('tgtsel').value:null;
+    if(['assault','attack','fire','move'].includes(k) && !tid){ toast('先在下面选一个目标'); return; }
+    u.order = ['assault','attack','fire','move'].includes(k) ? {kind:k,id:tid} : {kind:k};
+    log('rec','回执：'+u.unit+' 命令「'+k+'」已受理。');
+    render(); drawOrders();
+  });
+}
+
+// ---------- 初始化 UI ----------
+function initUI(){
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+    $('pane-'+b.dataset.p).classList.add('on');
+    if(b.dataset.p==='report'){ renderReports(); renderDigest(); }
+  });
+  // API 设置（localStorage 记忆）
+  try{
+    const saved = JSON.parse(localStorage.getItem('yasuda_api')||'{}');
+    $('apiBase').value = saved.base || 'https://api.deepseek.com';
+    $('apiModel').value = saved.model || 'deepseek-v4-flash';
+    $('apiKey').value = saved.key || '';
+  }catch(e){}
+  if($('btnAI')) $('btnAI').onclick = ()=>{ callAI(); };
+  if($('btnAIAuto')) $('btnAIAuto').onclick = ()=>{
+    S.autoAI = !S.autoAI;
+    $('btnAIAuto').textContent = S.autoAI ? '停止自动战报' : '每回合自动生成';
+    log('sys','自动战报：'+(S.autoAI?'开（每 2 回合）':'关'));
+  };
+  $('zones').innerHTML = ZONES.map(z=>'<button class="bt'+(z.id===curZone?' on':'')+'" data-z="'+z.id+'">'+z.name+'</button>').join('');
+  document.querySelectorAll('#zones button').forEach(el=>el.onclick=()=>{
+    const z = ZONES.find(x=>x.id===el.dataset.z); curZone=z.id;
+    map.setView([z.lat,z.lng], z.zoom);
+    document.querySelectorAll('#zones button').forEach(x=>x.classList.remove('on')); el.classList.add('on');
+  });
+  $('sides').innerHTML = ['全共斗','机动队'].map(s=>'<button class="bt'+(s===playerSide?' on':'')+'" data-s="'+s+'">指挥 '+s+'</button>').join('');
+  document.querySelectorAll('#sides button').forEach(el=>el.onclick=()=>{
+    playerSide = el.dataset.s; S.playerSide = playerSide; mode='free'; $('btnMode').textContent='切到剧本回放';
+    document.querySelectorAll('#sides button').forEach(x=>x.classList.remove('on')); el.classList.add('on');
+    log('sys','切换为自由推演，你指挥「'+playerSide+'」。'); render();
+  });
+  $('btnStep').onclick = ()=>{ step(); };  $('btnReset').onclick = ()=>{ stop(); fresh(); selUnit=null; render(); drawOrders(); $('log').innerHTML=''; };
+  $('btnMode').onclick = ()=>{ mode = mode==='script'?'free':'script'; $('btnMode').textContent = mode==='script'?'切到自由推演':'切到剧本回放'; log('sys','模式：'+(mode==='script'?'剧本回放':'自由推演')); render(); };
+  $('btnAuto').onclick = ()=>{ if(playing){ stop(); } else { playing=true; $('btnAuto').textContent='暂停';
+      timer=setInterval(()=>{ if(S.t+STEP>T1){ stop(); toast('已到 1/20 06:00'); return; } step(); }, 700); } };
+  // 图例
+  const leg = [['机动队','机动队'],['全共斗','全共斗'],['反帝学评','反帝学评'],['社学同','社学同'],['社学同 ML派','社学同 ML派'],
+               ['中核派','中核派'],['革马派','革马派'],['明大共斗','明大共斗'],['民青','民青（第三方）']];
+  $('legend').innerHTML = leg.map(([k,l])=>'<div><i style="background:'+COL[k]+'"></i>'+l+'</div>').join('')+
+    '<div style="color:#8ea0b4;margin-top:3px">大圆＝安田讲堂（逐层）／小圆＝据点／点＝编组</div>';
+}
+function stop(){ playing=false; if(timer) clearInterval(timer); timer=null; const b=$('btnAuto'); if(b) b.textContent='自动'; }
+
+function initLists(){
+  $('evlist').innerHTML = PACK.events.map(e=>'<div class="ev" data-lat="'+(e.lat||'')+'" data-lng="'+(e.lng||'')+'"><span class="tm">'+e.date+' '+(e.time_label||'')+
+    '</span><span>'+e.event+' <span class="badge">'+(e.sources||[]).join(',')+'</span></span></div>').join('');
+  $('figlist').innerHTML = '<table><tr><th>阵营</th><th>指标</th><th>值</th><th>口径</th><th>状态</th></tr>'+
+    PACK.figures.map(f=>'<tr><td>'+f.side+'</td><td>'+f.metric+'</td><td>'+(f.value===null?'未核得':f.value)+'</td><td>'+(f.scope||'')+'</td><td>'+f.evidence_status+'</td></tr>').join('')+'</table>';
+  $('docbox').innerHTML = '<p>本演示对齐 Gentactix-DSH 的结构（scenarios/sources/timeline/forces/figures/gaps + anchors + adjudication 几何参数），但裁决器是教学级简化：只裁机动、街垒、逐层易手与人数账，<b>不产出伤亡估计</b>。</p>'+
+    '<p>可指挥范围：本乡（讲堂逐层、列品馆、法研、法文2号馆、医学部两馆、教育学部、第2食堂）、神田（街垒、明大骏河台、御茶之水站前派出所）、驹场（第8本馆、第1·2本馆）——对所有警察与民青据点都可下命令。</p>'+
+    '<p><b>势力归属（按 S1 原文逐条核过）：</b>工学部 1·2·7·8 号馆与列品馆在 1/12 15:00 由<b>反帝学评</b>系再封锁（列品馆 1/13 起转社学同 ML 派），理学部 1 号馆 1/15 16:00 由反帝学评主力约 150 人侵入、1/17 12:00 再封锁——故这两栋记在反帝学评名下，不留「全共斗」。讲堂 2 层是中核派＋全斗联＋青医联混成，5 层为反帝学评（南侧屋顶）＋社学同（6 层阳台）。教育学部 1/18 是民青据点，但当日为令状检证、无人被捕，故不记入逮捕数。民青在史实里受警方保护，警方 AI 不把民青据点列为目标。</p>'+
+    '<p>几何参数：contact '+G.contact_km+' km、control '+G.control_radius_km+' km、encircle '+G.encircle_radius_km+' km、retreat '+G.retreat_check_km+' km、terrain ×'+G.terrain_factor+'。剧本回放用史料基线（讲堂 1F 07:00、2F 12:00、3F 14:45、5F 15:35、6F 17:27），自由推演只吃命令与数值。</p>'+
+    '<p>时刻异文：18 日中止 17:30（S1）／17:10（岛泰三）并列；19 日结束 17:45／17:46 并列；检举 633／983、讲堂内 397／374 并列——本演示不取平均，按来源分别标注。</p>';
+}
+
+fresh(); initUI(); initLists(); render(); drawOrders();
+
+// 截图/演示用：URL 带 #demo 时自动进入「自由推演·全共斗」并推进到 01-18 14:30；#demo-report 额外切到战报页
+(function(){
+  if(!location.hash.includes('demo')) return;
+  mode='free'; playerSide='全共斗'; S.playerSide=playerSide;
+  $('btnMode').textContent='切到剧本回放';
+  document.querySelectorAll('#sides button').forEach(x=>x.classList.toggle('on', x.dataset.s==='全共斗'));
+  log('sys','演示状态：自由推演，指挥全共斗。');
+  for(let i=0;i<6;i++) step();
+  ['1','2','3'].forEach(f=>{ selFloor=f; floorDefend(f); });
+  selFloor='1'; floorCounter('1');
+  for(let i=0;i<10;i++) step();
+  selFloor='2'; render();
+  pushReport(fmt(S.t), '【规则战报 · 第 '+S.turn+' 回合】\n'+digestText(3), 'rule');
+  if(location.hash.includes('report')){
+    [...document.querySelectorAll('.tabs button')].find(b=>b.textContent==='战报').click();
+  }
+  if(location.hash.includes('struct')){
+    [...document.querySelectorAll('.tabs button')].find(b=>b.textContent==='结构').click();
+  }
+  const zz = location.hash.includes('zoom19') ? 19 : (location.hash.includes('zoom18') ? 18 : 0);
+  if(zz) setTimeout(()=>map.setView([35.71329,139.76195], zz), 800);
+})();
+setTimeout(()=>{ map.invalidateSize(); map.setView([35.7129,139.7618],17); draw(); }, 300);
+</script>
+</body>
+</html>

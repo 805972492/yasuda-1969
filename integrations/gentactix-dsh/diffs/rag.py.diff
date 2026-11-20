@@ -1,0 +1,12 @@
+--- a/gentactix/rag.py
++++ b/gentactix/rag.py
+@@ -292,7 +292,8 @@
+     spec = adjudication_lib.resolve(query, battle=battle, corpus_dir=root)
+     selected = f"{spec.name}.md"
+     allowed = None
+-    series = {"抗美援朝-": "抗美援朝/", "红军长征-": "红军长征/", "抗日战争-": "抗日战争/"}
++    series = {"抗美援朝-": "抗美援朝/", "红军长征-": "红军长征/", "抗日战争-": "抗日战争/",
++              "安田讲堂攻防战-": "安田讲堂/"}
+     prefix = next((p for p in series if spec.name.startswith(p)), None)
+     if prefix and any(c["source"] == selected for c in chunks):
+         allowed = {c["source"] for c in chunks

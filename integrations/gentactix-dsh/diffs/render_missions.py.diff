@@ -1,0 +1,76 @@
+--- a/tools/render_missions.py
++++ b/tools/render_missions.py
+@@ -16,6 +16,58 @@
+          'rail': '交通节点完好度降至20或以下并连续维持两轮',
+          'underground': '截止时组织存续值不少于50且仍有红方可用人员',
+          'reception': '停火窗口开放后红方在目标600米内完成接收，两轮确认'}
++
++
++def yasuda_mission():
++    """安田讲堂攻防战（1969-01-18 06:30）：校园尺度的局部教学想定。
++
++    红方＝讲堂守备队，蓝方＝警视厅机动队；坐标取自现代 OSM 轮廓，人数与库存是
++    明确教学假设，不是历史实际部署。exit 设在御茶之水站前（约 1.6 km），使
++    「守满截止回合」这一 delay 目标在校园尺度上可判定。
++    """
++    center = {'lat': 35.713428, 'lng': 139.762297}
++    source = ('教学合成初态：人数、库存、局部坐标、钟点与系数均为假设，'
++              '非历史实际部署；校园坐标取自现代 OSM 轮廓')
++
++    def unit(name, team, lat, lng, n):
++        return {'name': name, 'type': '步兵', 'lat': lat, 'lng': lng, 'hp': 100,
++                'combat_power': 50, 'speed': 2, 'attack_range': 150, 'morale': 70, 'supply': 10,
++                'supply_node_id': team + '-depot', 'logistics': {'food': 10, 'ammo': 10},
++                'personnel': {'committed': n, 'current': n, 'casualties': 0,
++                              'noncombat_losses': 0, 'source': source},
++                'equipment': [{'name': '街垒与投石' if team == 'red' else '放水车与催泪弹',
++                               'unit': '件', 'committed': 4, 'operational': 4,
++                               'damaged': 0, 'destroyed': 0, 'source': source}]}
++
++    world = {'center': [center['lat'], center['lng']], 'current_time': '1969-01-18 06:30',
++             'era': '1969 安田讲堂攻防（教学假设）', 'current_terrain': '校园建筑群',
++             'red_units': [unit('安田讲堂 1层守备队', 'red', 35.71343, 139.76230, 40),
++                           unit('安田讲堂 2层守备队', 'red', 35.71345, 139.76232, 30),
++                           unit('法学部研究室守备队', 'red', 35.71270, 139.76030, 130)],
++             'blue_units': [unit('第7·第8机动队（正门）', 'blue', 35.71294, 139.75966, 1000),
++                            unit('第5·第6机动队（赤门）', 'blue', 35.71059, 139.76036, 1000),
++                            unit('装甲车·放水车队', 'blue', 35.71300, 139.76090, 120)],
++             'engagements': [], 'terrain_features': [],
++             'supply_nodes': [{'id': 'red-depot', 'name': '红方教学补给点', 'team': 'red',
++                               'lat': 35.71343, 'lng': 139.76225, 'stock': 120, 'source': source},
++                              {'id': 'blue-depot', 'name': '蓝方教学补给点', 'team': 'blue',
++                               'lat': 35.71294, 'lng': 139.75960, 'stock': 120, 'source': source}],
++             'supply_routes': [], 'source_note': source,
++             'situation_report': '守方分据讲堂 1・2 层与法学部研究室；攻方已在正门、赤门与工学部前集结。'}
++
++    return {'id': 'YS01-local-v1', 'battle': '安田讲堂攻防战-1969.01.18至1969.01.19',
++            'title': '安田讲堂攻防战-1969.01.18至1969.01.19／局部教学演习',
++            'profile': 'delay', 'source_ids': ['S1', 'S34', 'S41'],
++            'assumptions': source, 'time_step': '30分钟',
++            'deadline_turn': 6, 'required_turns': 2, 'ceasefire_turn': 2,
++            'map_center': center, 'map_radius_km': 0.8, 'objective': center,
++            'exit': {'lat': 35.6990, 'lng': 139.7648}, 'goal_radius_km': 0.08,
++            'goal': GOALS['delay'],
++            'rules': {'move_km': 0.35, 'damage': 18, 'cover': 0.6},
++            'geometry': {'contact_km': 0.05, 'control_radius_km': 0.04, 'encircle_radius_km': 0.3,
++                         'retreat_check_km': 0.4, 'sealed_ratio_encircled': 0.85,
++                         'sealed_ratio_partial': 0.5, 'terrain_factor': 1.35},
++            'initial_state': world}
+ 
+ 
+ def render():
+@@ -57,6 +109,7 @@
+                                    'damaged': 0, 'destroyed': 0, 'source': source}]})
+         spec['initial_state'] = world
+         result.append(spec)
++    result.append(yasuda_mission())
+     return json.dumps({'version': 1, 'notice': '合成局部教学演习；不是历史战场精确复原', 'missions': result}, ensure_ascii=False, indent=2) + '\n'
+ 
+ 
+@@ -70,4 +123,5 @@
+         assert path.read_text(encoding='utf-8') == content, '使命数据需重新生成'
+     else:
+         path.write_text(content, encoding='utf-8')
+-    print('20 local teaching missions checked' if args.check else '20 local teaching missions generated')
++    print(f"{len(json.loads(content)['missions'])} local teaching missions checked" if args.check
++          else f"{len(json.loads(content)['missions'])} local teaching missions generated")

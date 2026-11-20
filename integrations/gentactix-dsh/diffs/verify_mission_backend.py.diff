@@ -1,0 +1,11 @@
+--- a/verify_mission_backend.py
++++ b/verify_mission_backend.py
+@@ -34,7 +34,7 @@
+             r=self.client.post('/api/sessions/'+self.sid+'/init')
+         self.assertEqual(r.status_code,200,r.text);return r.json()
+     def test_catalog_and_modes(self):
+-        r=self.client.get('/api/missions');self.assertEqual(len(r.json()['missions']),20)
++        r=self.client.get('/api/missions');self.assertEqual(len(r.json()['missions']),21)
+         self.assertNotIn('initial_state',r.json()['missions'][0])
+         for changed in ({'simulation_mode':'replay'},{'simulation_mode':'bad'},{'mission_id':'bad'}, {'use_agent_tools':True}, {'use_live_intel':True}):
+             self.assertEqual(self.client.post('/api/sessions',json={**self.payload,**changed}).status_code,422)

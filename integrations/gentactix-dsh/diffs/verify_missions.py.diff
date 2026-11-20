@@ -1,0 +1,11 @@
+--- a/verify_missions.py
++++ b/verify_missions.py
+@@ -11,7 +11,7 @@
+         return m.initial(next(s['id'] for s in m.catalog() if s['profile'] == profile))
+ 
+     def test_catalog_replay_and_final_verdict(self):
+-        self.assertEqual(len(m.catalog()), 20)
++        self.assertEqual(len(m.catalog()), 21)
+         for s in m.catalog():
+             with self.subTest(s=s['id']):
+                 a=m.initial(s['id']); b=m.initial(s['id'])

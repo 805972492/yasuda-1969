@@ -1,0 +1,22 @@
+--- a/tools/render_long_march.py
++++ b/tools/render_long_march.py
+@@ -72,7 +72,9 @@
+                   "", "| 参考点 | 纬度、经度 | 工作误差圈 km | 地名数据 |", "|---|---|---|---|"]
+         for key in anchors["campaigns"][name]["points"]:
+             p = anchors["points"][key]
+-            parts.append(f'| {p["name"]} | {p["coordinates"][0]}, {p["coordinates"][1]} | {p["uncertainty_km"]} | [GeoNames {p["geoname_id"]}]({p["source_url"]}) |')
++            gid = p.get("geoname_id")
++            ref = f'[GeoNames {gid}]({p["source_url"]})' if gid else f'[地图点]({p.get("source_url", "")})'
++            parts.append(f'| {p["name"]} | {p["coordinates"][0]}, {p["coordinates"][1]} | {p["uncertainty_km"]} | {ref} |')
+         parts += ["", s["geography"], "", "## 兵种、装备与补给", s["equipment"],
+                   "", "## 推演目标、关键决策与反事实", s["modeling"],
+                   "", "## 争议与待考", *["- " + x for x in s["uncertainties"]],
+@@ -84,7 +86,7 @@
+                 parts.append(f'  适用限制：{src["caveat"]}')
+         gap_writer.writerow([s["id"], "战术坐标", s["geography"], "历史地图配准、渡口/山道/工事身份核对；纪念设施和现代聚落坐标不能代替"])
+         gap_writer.writerow([s["id"], "实力与装备", "逐日部队编制、实到人数、可用装备、粮弹与后送记录", "注明日期与建制边界的实力表；不能用团数乘满编人数"])
+-        parts += ["", f"编辑源：`{data_dir.relative_to(ROOT)}/scenarios.json`；执行 `python tools/{renderer}` 更新本卡及配套 CSV。"]
++        parts += ["", f"编辑源：`{data_dir.relative_to(ROOT).as_posix()}/scenarios.json`；执行 `python tools/{renderer}` 更新本卡及配套 CSV。"]
+         outputs[ROOT / "corpus" / (name + ".md")] = "\n".join(parts) + "\n"
+         params = s["geometry"]
+         lines = ["---", f"battle_name: {name}", "aliases: " + "|".join(s["aliases"]),

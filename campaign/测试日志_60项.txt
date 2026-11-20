@@ -1,0 +1,62 @@
+﻿PASS  移动-单步位移≈0.55km   [d0-d1=0.550]
+PASS  移动-不瞬间传送   [d1=1.150]
+PASS  移动-贴合目标不再前进   [d=0.050]
+PASS  移动-转移命令不占地   [got=机动队  want=机动队]
+PASS  控制权-机动队未接到命令就不动
+PASS  移动-反抗军单步≈0.45km   [d0-d1=0.450]
+PASS  攻击-远处只机动   [got=40  want=40]
+PASS  攻击-留下机动回执
+PASS  攻击-同阵营街垒不变   [got=80  want=80]
+PASS  攻击-回执「已在本方控制下」
+PASS  门控-突击被退回
+PASS  门控-补给未扣   [got=100  want=100]
+PASS  门控-命令已清空   [got=null  want=null]
+PASS  门控-同一条不重复退   [got=2  want=2]
+PASS  门控-直升机不能转移   [got=null  want=null]
+PASS  门控-民青无 assault/attack
+PASS  攻击-归属不变   [got=社学同 ML派  want=社学同 ML派]
+PASS  攻击-街垒停在 8   [got=8  want=8±0.01]
+PASS  攻击-1F 仍属守方   [got=全共斗  want=全共斗]
+PASS  攻击-1F 街垒有下限   [b=8]
+PASS  逐层-3F 不接令
+PASS  逐层-给出受阻提示
+PASS  逐层-清完下面后接令
+PASS  逐层-易手顺序 1→6 单调   [first=2,6,10,13,18,23]
+PASS  逐层-反击打不到远处警察   [got=1000  want=1000]
+PASS  逐层-未误改楼层
+PASS  攻击-命令跨回合保持   [40→30→20]
+PASS  攻击-邻馆街垒不变   [got=50  want=50]
+PASS  攻击-1F 可被守方夺回   [got=全共斗  want=全共斗]
+PASS  攻击-空中压制停在 8   [got=8  want=8]
+PASS  攻击-压满后命令结束   [got=null  want=null]
+PASS  记账-清层 1F 计 40 人   [got=40  want=40]
+PASS  记账-解除无人馆不计制压   [got=0  want=0]
+PASS  撤退-命令结束   [got=null  want=null]
+PASS  撤退-士气 −10   [got=70  want=70±0.01]
+PASS  撤退-不重复扣士气   [got=80  want=80]
+PASS  包围-标记生效   [sealedUntil=2]
+PASS  包围-修补被拒   [got=80  want=80]
+PASS  包围-回执写明被包围
+PASS  加固-空地加固被拒
+PASS  合并-总人数守恒   [got=730  want=730]
+PASS  合并-少了一个编组
+PASS  控制权-反抗军编组 ≥10   [n=13]
+PASS  控制权-含反帝学评
+PASS  控制权-含神田/驹场部队
+PASS  跨区-派出所转手   [got=全共斗  want=全共斗]
+PASS  民青-反击敌方   [36 < 40]
+PASS  民青-不误伤友军   [got=200  want=200]
+PASS  长跑-时钟与回合一致   [got=3240  want=3240]
+PASS  长跑-完整性告警为零   [got=0  want=0]
+PASS  长跑-人数不为负
+PASS  长跑-士气/补给在界内
+PASS  长跑-街垒不为负
+PASS  长跑-没有 NaN
+PASS  长跑-警方始终没打民青（医学部本馆）   [got=民青  want=民青]
+PASS  长跑-警方始终没打民青（教育学部）   [got=民青  want=民青]
+PASS  长跑-讲堂终局归警方   [got=机动队  want=机动队]
+PASS  剧本-讲堂 6F 全失守   [got=机动队,机动队,机动队,机动队,机动队,机动队  want=机动队,机动队,机动队,机动队,机动队,机动队]
+PASS  剧本-教育学部走验证   [got=机动队  want=机动队]
+PASS  剧本-告警为零   [got=0  want=0]
+---
+SUMMARY 60 / 60
