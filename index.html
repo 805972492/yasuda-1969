@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>安田讲堂攻防战（1969.01.18—01.19）· 战役推演</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#0d1117;--panel:#141b25;--panel2:#1b2431;--line:#26323f;--fg:#e8eef6;--dim:#8ea0b4;--police:#4f8fd0;--rebel:#c0563b;--mq:#c9a227;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.5 "Microsoft YaHei",system-ui,sans-serif}
+#app{display:flex;height:100%}
+#map{flex:1;min-width:0}
+#side{width:520px;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--line)}
+#side header{padding:10px 14px;border-bottom:1px solid var(--line)}
+#side header h1{font-size:15px;margin:0 0 2px}
+#side header .sub{color:var(--dim);font-size:11px}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel2)}
+.tabs button{flex:1;background:none;border:0;color:var(--dim);padding:8px 4px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.on{color:#fff;border-bottom-color:var(--rebel)}
+.pane{display:none;overflow:auto;padding:10px 14px;flex:1}
+.pane.on{display:block}
+.clockrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#clock{font-size:15px;font-weight:600;color:#ffd479;font-variant-numeric:tabular-nums}
+button.bt{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:5px 9px;font-size:12px;cursor:pointer}
+button.bt:hover{border-color:#3d5064}
+button.bt:disabled{opacity:.35;cursor:not-allowed}
+button.bt.on{background:#2a3a4c;border-color:#4a6683}
+.zones{display:flex;gap:6px;margin:6px 0 10px}
+.side-toggle{display:flex;gap:6px;margin:6px 0 10px}
+h3{font-size:12px;color:var(--dim);margin:12px 0 5px;font-weight:600;letter-spacing:.04em}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th,td{text-align:left;padding:3px 4px;border-bottom:1px solid #1e2836;vertical-align:top}
+th{color:var(--dim);font-weight:500}
+.unit{display:flex;gap:6px;align-items:center;padding:4px 3px;border-radius:4px;cursor:pointer;font-size:12px}
+.unit:hover{background:#1b2534}
+.unit.sel{background:#243346;outline:1px solid #3d5a7a}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.meta{color:var(--dim);font-size:10.5px}
+#log{font-size:11.5px;max-height:230px;overflow:auto;border-top:1px solid var(--line);padding-top:6px}
+.ev{display:flex;gap:6px;margin:3px 0;font-size:11.5px}
+.ev .tm{color:#ffd479;flex:none;font-variant-numeric:tabular-nums}
+.ev.rec .tm{color:#7fd1a0}
+.ev.warn{color:#ffb4a2}
+.legend{position:absolute;left:10px;bottom:10px;z-index:600;background:rgba(13,17,23,.82);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:11px;line-height:1.7}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+#toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:700;background:rgba(13,17,23,.9);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;display:none}
+.badge{display:inline-block;padding:0 5px;border-radius:8px;background:#233043;color:#a9c0d6;font-size:10px;margin-left:4px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"><div class="legend" id="legend"></div><div id="toast"></div></div>
+  <aside id="side">
+    <header>
+      <h1>安田讲堂攻防战 · 战役推演</h1>
+      <div class="sub">1969-01-18 06:30 → 01-20 06:00／30 分钟一回合／数据：东大《纷争日志 第4卷》、国会会议录、岛泰三、小熊英二、犯罪白书</div>
+    </header>
+    <div class="tabs">
+      <button data-p="sim" class="on">推演</button>
+      <button data-p="ledger">台账</button>
+      <button data-p="struct">结构</button>
+      <button data-p="report">战报</button>
+      <button data-p="events">事件</button>
+      <button data-p="figures">数字</button>
+      <button data-p="replay">复盘</button>
+      <button data-p="doc">说明</button>
+    </div>
+
+    <div class="pane on" id="pane-sim">
+      <div class="clockrow"><b id="clock">—</b><span class="badge" id="modebadge">剧本</span></div>
+      <button class="bt" id="btnStep">推进 1 步</button>
+      <button class="bt" id="btnAuto">自动</button>
+      <button class="bt" id="btnReset">重置</button>
+      <button class="bt" id="btnMode">切到自由推演</button>
+      <div class="zones" id="zones"></div>
+      <div class="side-toggle" id="sides"></div>
+
+      <h3>安田讲堂 · 逐层（守／攻）</h3>
+      <div class="meta">点一层＝选中该层；自由推演时可在下面直接对该层下令（守方：加固 / 反击 / 撤离 / 增援；攻方：定向突击 / 压制）。</div>
+      <table id="floors"></table>
+      <div id="floorops" style="margin-top:6px"></div>
+
+      <h3>选中编组 · 下命令</h3>
+      <div class="meta" id="selinfo">先在下面点一个编组</div>
+      <div id="orders" style="margin-top:6px"></div>
+
+      <h3>我方可控编组</h3>
+      <div id="units"></div>
+
+      <h3>战报</h3>
+      <div id="log"></div>
+    </div>
+
+    <div class="pane" id="pane-ledger">
+      <h3>人员·装备·士气台账</h3>
+      <div class="meta">人数随战斗、被捕、援军变化；「完整性」列标出可疑增减（对齐上游 integrity 检查）。</div>
+      <table id="ledger"></table>
+    </div>
+    <div class="pane" id="pane-struct">
+      <h3>安田讲堂 · 建筑结构（立面分层）</h3>
+      <div class="meta">地下 1 层 ＋ 地上 5 层 ＋ 钟塔 6—9 层；延床 6,990㎡、高 39.7m。3 层以上建在台地上，1—2 层在崖下，正面玄关开在 3 层，3 层与 1 层高差约 6m。正面朝西（正门·银杏并木），背面朝东（御殿下崖下）。1969 年座位：3 层 961 ＋ 4 层 777 ＝ 1,738 席。</div>
+      <div id="structmap" style="margin:8px 0"></div>
+      <div class="meta" id="structnote"></div>
+      <div style="margin-top:8px">
+        <button class="bt" onclick="mergeUnits()">合并本战区同阵营编组</button>
+        <button class="bt" onclick="if(selFloor)floorMergeOrgs(selFloor)">合并选中层各派</button>
+        <button class="bt" onclick="if(selFloor)floorMergeUp(selFloor)">把上一层并入选中层</button>
+      </div>
+    </div>
+    <div class="pane" id="pane-report">
+      <h3>战报</h3>
+      <div class="meta">每回合自动记一条「回合摘要」；也可以接入 DeepSeek API，用真实状态生成一份参谋部口吻的战报。</div>
+      <div id="apibox" style="margin:8px 0;padding:8px;border:1px solid #26323f;border-radius:6px;background:#111822">
+        <div class="meta" style="margin-bottom:4px">API（只存本机 localStorage）</div>
+        <input id="apiBase" placeholder="https://api.deepseek.com" style="width:100%;margin-bottom:4px;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">
+        <input id="apiModel" placeholder="deepseek-v4-flash" style="width:100%;margin-bottom:4px;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">
+        <input id="apiKey" type="password" placeholder="sk-..." style="width:100%;margin-bottom:6px;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">
+        <button class="bt" id="btnAI">生成本回合战报（API）</button>
+        <button class="bt" id="btnAIAuto">每回合自动生成</button>
+        <span class="meta" id="apistate"></span>
+      </div>
+      <div id="reports"></div>
+      <h3>回合摘要（规则自动）</h3>
+      <div id="digest"></div>
+    </div>
+    <div class="pane" id="pane-events"><h3>史料事件（点到即定位）</h3><div id="evlist"></div></div>
+    <div class="pane" id="pane-figures"><h3>官方数字与异文</h3><div id="figlist"></div></div>
+    <div class="pane" id="pane-replay"><h3>复盘：每次易手</h3><div id="replaylist"></div></div>
+    <div class="pane" id="pane-doc"><div id="docbox"></div></div>
+  </aside>
+</div>
+
+<script id="pack" type="application/json">{"battle": "安田讲堂攻防战-1969.01.18至1969.01.19", "scenario": {"id": "YS01", "name": "安田讲堂攻防战-1969.01.18至1969.01.19", "track": "全共斗（守）／警视厅机动队（攻）", "kind": "都市内构内要塞攻防（逐馆解除→逐层制压）", "scope": "1969-01-18 06:30 至 1969-01-19 18:00 的构内攻防；含列品馆·法学部研究室·法文2号馆·医学部·教育学部等逐馆解除，以及神田（御茶之水）方面的兵力抽调。1/20 以后只作收束节点。", "aliases": ["安田講堂攻防戦", "東大安田講堂事件", "安田講堂落城"], "sources": ["S1", "S34", "S35", "S41", "S43", "S46", "S2", "S3", "S27"], "forces": [{"side": "机动队", "unit": "第1·第2机动队（工学部方面）", "description": "06:50 自农学部正门入构，过陆桥向工学部；责任区为工学部1·2·7·8号馆与列品馆方面。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "第3·第4机动队（龙冈门·池之端门）", "description": "07:03 自龙冈门与池之端门入构，责任区医学部方面与构内东南。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "第5·第6机动队（赤门）", "description": "07:05 自赤门入构，责任区法学部·文学部·经济学部方面。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "第7·第8机动队（正门·讲堂正面）", "description": "正门方面待机与正面攻略；13:20 本格攻击、15:20 正面攻击。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "装甲车·放水车队", "description": "放水车10数台（09:00）、装甲车以11:00 破列品馆路障、烟幕与催泪弹支援。", "sources": ["S1", "S34"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "直升机（侦察·催泪液）", "description": "08:00 上空投催泪弹、14:35 铁桶催泪液、次日 09:00 风压支援。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "私服·搜查班", "description": "500 人（S1）；17:50 明大学生会馆突入救出即其行动。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "神田增派（东大→神田 900 人）", "description": "13:30 自东大抽调 900 人赴神田，与既存部队合计 2,000 人阻止学生流向警视厅（自 8,000 人中抽出，不另加于总数）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "全共斗", "unit": "安田讲堂 1层（大讲堂下层）", "description": "本乡本科生部队 40 人，文科·理科两分队守四处楼梯；对党派部队无指挥权。", "sources": ["S34"], "evidence_status": "published_account", "source_locator": {}}, {"side": "中核派", "unit": "安田讲堂 2层（中核派＋全斗联·青医联）", "description": "二层约 30 人为中核派·全斗联·青医联混成，自 17 日夜由中核派守卫，12:15 前后被捕 20 余名；另有自三层支援二层街垒的部署（S34 引岛泰三）。", "sources": ["S34", "S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "反帝学评", "unit": "安田讲堂 5层（左）", "description": "解放派据 5 层左侧；16:30 与社学同分别在 5 层南侧屋顶与 6 层阳台。人数史料未给。", "sources": ["S34", "S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "社学同", "unit": "安田讲堂 5层（右）", "description": "社学同据 5 层右侧；16:30 在 6 层阳台唱国际歌。人数史料未给。", "sources": ["S34", "S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "中核派", "unit": "安田讲堂 6层·钟楼", "description": "中核派在 6 层中央与钟楼；17:45 钟楼屋顶最后数人。人数史料未给。", "sources": ["S34", "S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "中核派", "unit": "法学部研究室（法研）", "description": "15 日 09:30 中核派＋四托洛約 130 人入；18 日 11:40 突入 3 层、屋顶浇汽油，15:35 屋顶 121 人被捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "社学同 ML派", "unit": "工学部列品馆", "description": "14 日 16:00 占据要塞化；18 日 08:50 排除开始、火焰喷射器、11:00 装甲车破路障、13:00 过后屋顶 32 人（女 3·重伤 2）。", "sources": ["S1", "S34"], "evidence_status": "published_account", "source_locator": {}}, {"side": "革马派", "unit": "法文2号馆", "description": "18 日 09:20 前后 14 人在 3·4 层投石，屋顶全员被捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "全共斗", "unit": "医学部中央馆（塔屋）", "description": "16 人在塔屋抵抗至 08:30 全员被捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "反帝学评", "unit": "理学部1号馆（封锁·馆内无人）", "description": "1/15 16:00 反帝学评主力约 150 人侵入；1/17 12:00 再封锁；18 日 07:10 机动队到着时馆内无人（1/9 事件见证至 11:30）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "民青", "unit": "医学部本馆（守备）", "description": "18 日 19:50 共斗約 200 攻、民青約 200 自 2 楼阳台放水投石；19:30 前后仍在守。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "全共斗", "unit": "神田街垒队（御茶之水·明大通）", "description": "19 日 09:00 过夜约 800 人行动开始，御茶之水站与明大通一带筑 10 处街垒；12:50 拦停都电。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "全共斗", "unit": "明大骏河台（过夜队）", "description": "明大学生会馆与骏河台校舍为神田方面据点；18 日 09:35 自此处出发袭御茶之水站前派出所。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "全共斗", "unit": "驹场第8本馆队", "description": "驹场第 8 本馆长期被封锁；15 日民青来攻时馆内约 100 人。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "全共斗", "unit": "本乡增援（日大·他大）", "description": "15–17 日陆续入构的支援部队（日大共斗 40、他大数百）；可投入本乡任何据点。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "民青", "unit": "教育学部（民青据点）", "description": "1/9 教育学部有民青武装约 3,000 人；1/10 秩父宮集会由民青主导；1/14 19:57 千人示威自此出发。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "民青", "unit": "第2食堂（民青据点）", "description": "1/1 15:00 民青约 180 人向第二食堂示威；1/10 0:30 示威后分散入第 2 食堂等据点。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "民青", "unit": "驹场第1·2本馆（民青）", "description": "12 日 20:30 驹场民青＋班级联合战术占据学生会馆·1 号馆并夺回第 1·2 本馆。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"side": "机动队", "unit": "御茶之水站前派出所（守备）", "description": "18 日 09:35 被 150 人袭击破玻璃；19 日 12:50 前后再被占据·放火。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}], "events": [{"date": "1969-01-18", "time_label": "06:30", "precision": "小时", "event": "警视厅依大学正式要請，在本富士署设总合警备本部；第1—第8机动队及各方面部队 8,000 人、私服 500 人，合计 8,500 人。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "06:30", "precision": "小时", "event": "施设部设备課切断占据中及周边建筑的送电（06:45 停水）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "06:50", "precision": "小时", "event": "第1·第2机动队自农学部正门入构，过陆桥向工学部。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "07:03", "precision": "小时", "event": "部队自龙冈门、池之端门入构。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "07:05", "precision": "小时", "event": "部队自赤门入构。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "07:10", "precision": "小时", "event": "机动队抵理学部1号馆；馆内无人，1/9 见证验证至 11:30。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "07:12", "precision": "小时", "event": "弥生门路障撤去。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "07:20", "precision": "小时", "event": "医学部1号馆（学生5人逮捕）与3号馆解除；中央馆塔屋 16 人抵抗。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "08:20", "precision": "小时", "event": "医学部中央馆塔屋 16 人全员逮捕（約 08:30）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "08:00", "precision": "小时", "event": "对大讲堂形成包围；各所发射催泪弹，直升机上空投弹。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "08:50", "precision": "小时", "event": "工学部列品馆排除开始：社学同 ML 派以投石、燃烧瓶、瓦斯管自制火焰喷射器抵抗。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "09:00", "precision": "小时", "event": "放水车 10 数台向大讲堂放水。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "09:15", "precision": "小时", "event": "教育学部解除（09:15 令状、机动队約 100 人一巡、11:20 验证終了）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "09:00", "precision": "小时", "event": "法学部研究室排除开始（中核派·四托洛）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "11:00", "precision": "小时", "event": "装甲车破壞列品馆路障，部队自后门与法文1号馆突入、制压 1 楼。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "08:40", "precision": "时段", "event": "列品馆 2·3·4 楼起火，消防车出动（时刻按 11:39 前后报導并列）。", "sources": ["S1", "S34"], "evidence_status": "source_conflict", "source_locator": {}}, {"date": "1969-01-18", "time_label": "11:40", "precision": "小时", "event": "法学部研究室突入 3 楼；学生在屋顶浇汽油纵火。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "13:00", "precision": "小时", "event": "列品馆屋顶突入，逮捕 32 人（女 3、重伤 2）；学生喊「瓦斯弹直击伤及学友，停止攻击，无条件投降」。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "13:30", "precision": "小时", "event": "神田：逃入明大·中大的学生增至約 1,500 人，喊「攻击警视厅」；自东大抽调机动队 900 人，合計 2,000 人阻止。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "13:20", "precision": "小时", "event": "对大讲堂本格攻击开始；装甲车接近庶務部入口，被燃烧瓶点燃。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "14:35", "precision": "小时", "event": "直升机散布铁桶催泪液。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "15:20", "precision": "小时", "event": "正面攻击。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "15:30", "precision": "小时", "event": "背面 2 處約 50 人突入。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "15:35", "precision": "小时", "event": "法学部研究室屋顶突入，逮捕 121 人（中核派·四托洛）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "16:10", "precision": "小时", "event": "大讲堂 2 楼被侵入。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "16:20", "precision": "小时", "event": "电锯破门。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "17:30", "precision": "小时", "event": "警备本部下令中止，部队退去（S34 作 17:10 中止、17:19 广播重开）。", "sources": ["S1", "S34"], "evidence_status": "source_conflict", "source_locator": {}}, {"date": "1969-01-18", "time_label": "19:00", "precision": "小时", "event": "放水车配置，断续放水至翌朝。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "21:30", "precision": "小时", "event": "加藤总长代行发表声明：退去期限延至 20 日 10 时。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-18", "time_label": "23:59", "precision": "日", "event": "本乡构内逮捕 273 人（S1 日末统计，无具体时刻，此处置于日末）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "06:00", "precision": "小时", "event": "机动队在大讲堂周边重新集结。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "07:00", "precision": "小时", "event": "放水再开；部队自南北突入。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "09:00", "precision": "小时", "event": "放水达 5 楼；直升机风压支援；装甲车接近；木造隧道施设。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "09:20", "precision": "小时", "event": "各层楼梯街垒加固；部队以绳索·电动电钻·切割机拆除。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "09:00", "precision": "小时", "event": "神田：过夜约 800 人行动开始，御茶之水站与明大通一帶构筑 10 處街垒。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "12:00", "precision": "小时", "event": "2 楼 20 数人被捕（一說 12:15）。", "sources": ["S1", "S34"], "evidence_status": "source_conflict", "source_locator": {}}, {"date": "1969-01-19", "time_label": "12:55", "precision": "小时", "event": "3 楼学生部付近被制压。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "12:50", "precision": "小时", "event": "神田：御茶之水橋都电被拦停、一时占据；本乡2丁目冲突。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "13:50", "precision": "小时", "event": "南側 2→3 楼楼梯激战。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "14:45", "precision": "小时", "event": "3 楼街垒撤去；15 时頃馆内 200 人以上被捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "15:35", "precision": "小时", "event": "4→5 楼；北側屋顶抵抗約 10 分鐘停止。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "15:50", "precision": "小时", "event": "守备队全部被捕（S34；S1 作 15:00 过后 200 人以上、15:35 推进）。", "sources": ["S34", "S1"], "evidence_status": "source_conflict", "source_locator": {}}, {"date": "1969-01-19", "time_label": "16:30", "precision": "小时", "event": "5 楼南側屋顶＝反帝学评、6 楼阳台＝社学同；唱国际歌、反帝学评領袖演说。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "17:27", "precision": "小时", "event": "钟楼突入。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "17:40", "precision": "小时", "event": "南側屋顶与 6 楼阳台 60 人逮捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "17:45", "precision": "小时", "event": "钟楼屋顶共产同数人被捕——最后一人。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "19:00", "precision": "小时", "event": "公安部验证至 21:00：押收 25 件 901 点、敷石等 14 袋、无炸药。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-19", "time_label": "19:00", "precision": "小时", "event": "神田：本乡2·3丁目两次冲突（18:42—20:00）、街垒至 22 时撤除；至夜间 75 人逮捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-20", "time_label": "10:00", "precision": "小时", "event": "退去期限（18 日 21:30 声明）。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-20", "time_label": "11:30", "precision": "小时", "event": "佐藤首相·坂田文相一行自龙冈门来学約 1 小时，加藤案内视察安田讲堂、法研。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1969-01-20", "time_label": "11:30", "precision": "小时", "event": "文部省与东大会談，入試中止最終决定（S27 二传说，C 级）。", "sources": ["S27"], "evidence_status": "unverified", "source_locator": {}}, {"date": "1/18", "time_label": "09:20", "precision": "小时", "event": "驹场代表团系约 300 人示威；11:00 明大和泉约 50 人正门前静坐，驹场学生加入超 100 人。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/18", "time_label": "09:35", "precision": "分钟", "event": "神田：明大学生会馆出发约 150 人袭御茶之水站前派出所，破玻璃约 15 分后退去。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/18", "time_label": "09:50", "precision": "分钟", "event": "神田：中大社学同约 100 人掘 YMCA 前铺石，袭御茶之水与骏河台下派出所。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/18", "time_label": "11:00", "precision": "小时", "event": "神田：日大共斗约 50 人＋社学同约 150 人示威，正午前机动队发射催泪弹。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/18", "time_label": "13:30", "precision": "分钟", "event": "神田：逃入明大/中大者约 1,500 人喊「警视厅攻击」；东大从机动队 900 人增派，以 2,000 人阻止。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/18", "time_label": "17:50", "precision": "分钟", "event": "神田：私服警官 1 人被带入明大学生会馆，机动队约 200 人突入救出。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/18", "time_label": "20:00", "precision": "小时", "event": "神田：主力撤回中大，决议「明日再攻东大」，22 时解散。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/19", "time_label": "09:00", "precision": "分钟", "event": "神田：明大·日大过夜约 800 人行动开始，御茶之水站与明大通一带街垒 10 处。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/19", "time_label": "12:50", "precision": "分钟", "event": "神田：御茶之水桥拦停都电、赶下司机车掌；本乡2丁目冲突，至夜 75 人逮捕。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/19", "time_label": "18:42", "precision": "分钟", "event": "神田：本乡2·3丁目两次冲突，街垒维持至 22 时。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}, {"date": "1/19", "time_label": "22:00", "precision": "小时", "event": "神田：机动队趁总会后撤离时一齐推进，街垒撤除。", "sources": ["S1"], "evidence_status": "published_account", "source_locator": {}}], "figures": [{"side": "机动队", "metric": "出动兵力", "value": 8500, "qualifier": "人", "scope": "1969-01-18 06:30 总合警备本部", "note": "第1—第8机动队 8,000＋私服 500；不是同一时刻投入正面的人数。", "sources": ["S1"], "evidence_status": "published_account"}, {"side": "机动队", "metric": "出动兵力（細目）", "value": 8513, "qualifier": "人", "scope": "18 日全日", "note": "S34 細目：8 队 4,678＋另两方面 2,565＋预备与干部 1,000 餘；与 S1 总数差 13 人。", "sources": ["S34"], "evidence_status": "source_conflict"}, {"side": "机动队", "metric": "战车·放水车", "value": 12, "qualifier": "辆", "scope": "18 日", "note": "S34 作 12 辆水龙车；S1 只作「10 数台」。", "sources": ["S34", "S1"], "evidence_status": "source_conflict"}, {"side": "机动队", "metric": "催泪弹", "value": 10000, "qualifier": "发", "scope": "18 日", "note": "朝日新闻引述（二手，C 级）；S34 作 10,528 发、瓦斯銃 500 支。", "sources": ["S27", "S34"], "evidence_status": "unverified"}, {"side": "机动队", "metric": "警察側负伤", "value": 653, "qualifier": "人", "scope": "18—19 日", "note": "国会答辩（荒木萬壽夫 1969-03-25）：「六百五十三名、内入院 37 名」。", "sources": ["S2"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "讲堂内逮捕", "value": 397, "qualifier": "人", "scope": "19 日", "note": "S34 数字；S1 未给馆内总数，只给「200 人以上」与分楼层逮捕。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "讲堂内逮捕（另说）", "value": 374, "qualifier": "人", "scope": "19 日", "note": "S35 数字。", "sources": ["S35"], "evidence_status": "source_conflict"}, {"side": "全共斗", "metric": "屋顶逮捕", "value": 90, "qualifier": "人", "scope": "19 日 17:30", "note": "S34：「頂层平台上約 90 名青年学生全部被捕」。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "本乡构内逮捕", "value": 273, "qualifier": "人", "scope": "18 日", "note": "S1 日末统计。", "sources": ["S1"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "大讲堂逮捕", "value": 469, "qualifier": "人", "scope": "19 日", "note": "S1 日末「其他」栏。", "sources": ["S1"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "检举总数", "value": 633, "qualifier": "人", "scope": "18—19 日", "note": "警视厅记录（S34 引）；其中东大生 38 人。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "检举总数（另说）", "value": 983, "qualifier": "人", "scope": "18—19 日", "note": "S35 数字（含神田）。", "sources": ["S35"], "evidence_status": "source_conflict"}, {"side": "全共斗", "metric": "起訴", "value": 607, "qualifier": "人", "scope": "最終", "note": "最高裁刑事局；1969-03 时点 509 人。", "sources": ["S3"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "学生负伤（重伤）", "value": 76, "qualifier": "人", "scope": "18—19 日", "note": "S34：「失明 1 人、重伤 76 人」；另「面部被瓦斯弹击中者 18 名」。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "东大事件受理", "value": 984, "qualifier": "人", "scope": "1969-01-09—19", "note": "犯罪白书（檢察阶段受理，非逮捕数）。", "sources": ["S41"], "evidence_status": "published_account"}, {"side": "市民", "metric": "物件損害", "value": 450000000, "qualifier": "日元", "scope": "18—19 日", "note": "国会答辩（冈沢完治 1969-03-19）：「四億五千萬圆」。", "sources": ["S2"], "evidence_status": "published_account"}], "outcome": "19 日 17:45 钟楼屋顶最后数人被捕，安田讲堂被制压；本乡构内 273（18 日）＋469（19 日）逮捕，检举总数据警视厅作 633，其中东大生 38 人。攻方达成「解除占据」目标，但抽调 900 人赴神田使正面攻勢在 18 日未能决著。", "geography": "本乡构内（文京区本乡7-3-1）；正门（西）—银杏并木—安田讲堂—御殿下（东）为东西軸线。讲堂正面朝西，1·2 层在崖下、3 层以上在台地，正面玄関在 3 层（与 1 层高差約 6 m）。坐標为现代 OSM 輪廓与史料方位推定，不是 1969 年測量圖。", "equipment": "攻方：放水车·装甲车·催泪弹·直升机·电锯·电钻·绳索·扩声器。守方：燃烧瓶·投石·硫酸·竹枪·石膏·手制火焰喷射器·角材·桌椅街垒·铁扉焊接。", "modeling": "教学目標：比較（1）逐馆解除的順序對讲堂攻略时刻的影響；（2）13:30 抽调 900 人赴神田的代價；（3）停电停水与街垒修复的此消彼长。反事实每次只改一个条件，保留相同初始兵力与时刻表。", "uncertainties": ["各层人数与屋頂派系构成未詳（S34/S35 均缺）。", "18 日中止时刻：S1 17:30／S34 17:10，并列。", "馆内 397（S34）／374（S35）／「約 400」三說。", "检举 633（S34）／983（S35）。", "神田方面細节（街垒 10 處、75 人逮捕）仅 S1 一家，未见警方文书。"], "points": ["yasuda_hall", "main_gate", "akamon", "ryuokomon", "ikenohata", "yayoi", "houbun2", "houbun1", "reppinkan", "igakubu_center", "igakubu_honkan", "kogakubu1", "kyoyo_gym", "ochanomizu"], "time_step": "30分钟", "geometry": {"contact_km": 0.05, "control_radius_km": 0.04, "encircle_radius_km": 0.3, "retreat_check_km": 0.4, "sealed_ratio_encircled": 0.85, "sealed_ratio_partial": 0.5, "terrain_factor": 1.35}, "preset_note": "几何參数按校園尺度（数百公尺）縮放；contact_km 只判「是否接觸」，不是射程。", "parameter_status": "teaching_estimate"}, "sources": {"S1": {"title": "東京大学「紛争日誌 その4」（1969年1月1日—3月26日）", "publisher": "东京大学文书馆（翻刻）", "url": "https://www.u-tokyo.ac.jp/content/400261559.pdf", "evidence_type": "一手日志（当日记录、翻刻）", "supports": "逐日分钟级记录：入构时刻、各馆解除、逮捕人数、神田联动、发布与交涉", "accessed": "2026-11-20", "original_archive_examined": false}, "S34": {"title": "島泰三『安田講堂 1968—1969』（中文译本）", "publisher": "当事者回忆录", "url": "", "evidence_type": "当事者回忆", "supports": "馆内分层配置、馆内生活、恐惧与秩序、逮捕 397 人、伤情 76 重伤", "accessed": "2026-11-20", "original_archive_examined": false}, "S35": {"title": "小熊英二『1968』上下（中文译本）", "publisher": "研究著作", "url": "", "evidence_type": "研究综述（引大量访谈与统计）", "supports": "世代与阶层结构、派系构成、日共与民青的定性语汇、逮捕 983 说", "accessed": "2026-11-20", "original_archive_examined": false}, "S41": {"title": "犯罪白書 昭和44年版 第一編第五章二", "publisher": "法務省", "url": "https://hakusyo1.moj.go.jp/jp/10/nfm/n_10_2_1_5_2_0.html", "evidence_type": "官方统计（检察阶段）", "supports": "东大事件受理 984 人、起訴 1,776、勾留认容率 98.0%", "accessed": "2026-11-20", "original_archive_examined": false}, "S43": {"title": "東京大学文書館紀要 第37号（「紛争日誌 その1」解題）", "publisher": "东京大学文书馆", "url": "https://www.u-tokyo.ac.jp/content/400141850.pdf", "evidence_type": "史料解题", "supports": "資料群 A–G 与底本关系、翻刻取舍原则", "accessed": "2026-11-20", "original_archive_examined": false}, "S2": {"title": "第61回国会 会議録（1969年）安田講堂事件関連答弁", "publisher": "国立国会图书馆 国会会议録检索システム", "url": "https://kokkai.ndl.go.jp/", "evidence_type": "国会答辩（官方记录）", "supports": "警察側负伤 653（入院 37）、燃烧瓶 500 本、起訴 509、物件損害 4.5 億圆", "accessed": "2026-11-20", "original_archive_examined": false}, "S3": {"title": "最高裁刑事局 学生運動関係事件の処理状況（二次引述）", "publisher": "最高裁判所事務总局（經二次引述）", "url": "", "evidence_type": "司法統計（二次引述）", "supports": "起訴 607 人、一審有罪 590 人（实刑 147 人）", "accessed": "2026-11-20", "original_archive_examined": false}, "S27": {"title": "日経「東大安田講堂攻防から50年」（2019-01-17）等報纸报道", "publisher": "日本经济新闻 等", "url": "https://www.nikkei.com/article/DGKKZO40105530X10C19A1EAC000/", "evidence_type": "报紙报道（二次引述）", "supports": "机动队約 8,500 人、逮捕約 630 人、催泪弹 1 万发·96 台车两、入試中止", "accessed": "2026-11-20", "original_archive_examined": false}, "S46": {"title": "NHKクロニクル 1969年1月18日・19日 総合テレビ番組表", "publisher": "NHK", "url": "https://www.nhk.or.jp/archives/chronicle/", "evidence_type": "播出记录（用户提供截图）", "supports": "两日节目表；无独立「现场直播」，有特别节目与新闻焦点", "accessed": "2026-11-20", "original_archive_examined": false}}, "forces": [{"id": "U01", "side": "机动队", "unit": "第1·第2机动队（工学部方面）", "desc": "06:50 自农学部正门入构，过陆桥向工学部；责任区为工学部1·2·7·8号馆与列品馆方面。", "n": 1000, "lat": 35.7138, "lng": 139.76, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U02", "side": "机动队", "unit": "第3·第4机动队（龙冈门·池之端门）", "desc": "07:03 自龙冈门与池之端门入构，责任区医学部方面与构内东南。", "n": 1000, "lat": 35.7118, "lng": 139.764, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U03", "side": "机动队", "unit": "第5·第6机动队（赤门）", "desc": "07:05 自赤门入构，责任区法学部·文学部·经济学部方面。", "n": 1000, "lat": 35.71059, "lng": 139.76036, "conf": "A", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U04", "side": "机动队", "unit": "第7·第8机动队（正门·讲堂正面）", "desc": "正门方面待机与正面攻略；13:20 本格攻击、15:20 正面攻击。", "n": 1000, "lat": 35.71294, "lng": 139.75966, "conf": "A", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U05", "side": "机动队", "unit": "装甲车·放水车队", "desc": "放水车10数台（09:00）、装甲车以11:00 破列品馆路障、烟幕与催泪弹支援。", "n": 120, "lat": 35.713, "lng": 139.7609, "conf": "推定", "src": ["S1", "S34"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U06", "side": "机动队", "unit": "直升机（侦察·催泪液）", "desc": "08:00 上空投催泪弹、14:35 铁桶催泪液、次日 09:00 风压支援。", "n": 2, "lat": 35.71343, "lng": 139.7623, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "架"}, {"id": "U07", "side": "机动队", "unit": "私服·搜查班", "desc": "500 人（S1）；17:50 明大学生会馆突入救出即其行动。", "n": 500, "lat": 35.7125, "lng": 139.761, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U08", "side": "机动队", "unit": "神田增派（东大→神田 900 人）", "desc": "13:30 自东大抽调 900 人赴神田，与既存部队合计 2,000 人阻止学生流向警视厅（自 8,000 人中抽出，不另加于总数）。", "n": 900, "lat": 35.699, "lng": 139.7643, "conf": "B", "src": ["S1"], "zone": "神田", "floor": null, "sect": "机动队", "nunit": "人"}, {"id": "U09", "side": "全共斗", "unit": "安田讲堂 1层（大讲堂下层）", "desc": "本乡本科生部队 40 人，文科·理科两分队守四处楼梯；对党派部队无指挥权。", "n": 40, "lat": 35.713428, "lng": 139.762297, "conf": "A", "src": ["S34"], "zone": "本乡", "floor": 1, "sect": "全共斗", "nunit": "人"}, {"id": "U10", "side": "中核派", "unit": "安田讲堂 2层（中核派＋全斗联·青医联）", "desc": "二层约 30 人为中核派·全斗联·青医联混成，自 17 日夜由中核派守卫，12:15 前后被捕 20 余名；另有自三层支援二层街垒的部署（S34 引岛泰三）。", "n": 30, "lat": 35.713428, "lng": 139.7623, "conf": "A", "src": ["S34", "S1"], "zone": "本乡", "floor": 2, "sect": "中核派", "nunit": "人"}, {"id": "U11", "side": "反帝学评", "unit": "安田讲堂 5层（左）", "desc": "解放派据 5 层左侧；16:30 与社学同分别在 5 层南侧屋顶与 6 层阳台。人数史料未给。", "n": null, "lat": 35.71343, "lng": 139.76229, "conf": "A", "src": ["S34", "S1"], "zone": "本乡", "floor": 5, "sect": "反帝学评", "nunit": "人"}, {"id": "U12", "side": "社学同", "unit": "安田讲堂 5层（右）", "desc": "社学同据 5 层右侧；16:30 在 6 层阳台唱国际歌。人数史料未给。", "n": null, "lat": 35.713432, "lng": 139.762294, "conf": "A", "src": ["S34", "S1"], "zone": "本乡", "floor": 5, "sect": "社学同", "nunit": "人"}, {"id": "U13", "side": "中核派", "unit": "安田讲堂 6层·钟楼", "desc": "中核派在 6 层中央与钟楼；17:45 钟楼屋顶最后数人。人数史料未给。", "n": null, "lat": 35.713428, "lng": 139.76231, "conf": "推定", "src": ["S34", "S1"], "zone": "本乡", "floor": 6, "sect": "中核派", "nunit": "人"}, {"id": "U14", "side": "中核派", "unit": "法学部研究室（法研）", "desc": "15 日 09:30 中核派＋四托洛約 130 人入；18 日 11:40 突入 3 层、屋顶浇汽油，15:35 屋顶 121 人被捕。", "n": 130, "lat": 35.7127, "lng": 139.7603, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "中核派", "nunit": "人"}, {"id": "U15", "side": "社学同 ML派", "unit": "工学部列品馆", "desc": "14 日 16:00 占据要塞化；18 日 08:50 排除开始、火焰喷射器、11:00 装甲车破路障、13:00 过后屋顶 32 人（女 3·重伤 2）。", "n": 50, "lat": 35.71395, "lng": 139.76035, "conf": "A", "src": ["S1", "S34"], "zone": "本乡", "floor": null, "sect": "社学同 ML派", "nunit": "人"}, {"id": "U16", "side": "革马派", "unit": "法文2号馆", "desc": "18 日 09:20 前后 14 人在 3·4 层投石，屋顶全员被捕。", "n": 14, "lat": 35.713, "lng": 139.7606, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "革马派", "nunit": "人"}, {"id": "U17", "side": "全共斗", "unit": "医学部中央馆（塔屋）", "desc": "16 人在塔屋抵抗至 08:30 全员被捕。", "n": 16, "lat": 35.7108, "lng": 139.76326, "conf": "A", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "全共斗", "nunit": "人"}, {"id": "U18", "side": "反帝学评", "unit": "理学部1号馆（封锁·馆内无人）", "desc": "1/15 16:00 反帝学评主力约 150 人侵入；1/17 12:00 再封锁；18 日 07:10 机动队到着时馆内无人（1/9 事件见证至 11:30）。", "n": 0, "lat": 35.7137, "lng": 139.76298, "conf": "A", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "反帝学评", "nunit": "人"}, {"id": "U19", "side": "民青", "unit": "医学部本馆（守备）", "desc": "18 日 19:50 共斗約 200 攻、民青約 200 自 2 楼阳台放水投石；19:30 前后仍在守。", "n": 200, "lat": 35.7108, "lng": 139.7618, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "民青", "nunit": "人"}, {"id": "U20", "side": "全共斗", "unit": "神田街垒队（御茶之水·明大通）", "desc": "19 日 09:00 过夜约 800 人行动开始，御茶之水站与明大通一带筑 10 处街垒；12:50 拦停都电。", "n": 800, "lat": 35.6995, "lng": 139.764, "conf": "B", "src": ["S1"], "zone": "神田", "floor": null, "sect": "全共斗", "nunit": "人"}, {"id": "U21", "side": "全共斗", "unit": "明大骏河台（过夜队）", "desc": "明大学生会馆与骏河台校舍为神田方面据点；18 日 09:35 自此处出发袭御茶之水站前派出所。", "n": 300, "lat": 35.6978, "lng": 139.7621, "conf": "B", "src": ["S1"], "zone": "神田", "floor": null, "sect": "明大共斗", "nunit": "人"}, {"id": "U22", "side": "全共斗", "unit": "驹场第8本馆队", "desc": "驹场第 8 本馆长期被封锁；15 日民青来攻时馆内约 100 人。", "n": 100, "lat": 35.6594, "lng": 139.6847, "conf": "B", "src": ["S1"], "zone": "驹场", "floor": null, "sect": "全共斗", "nunit": "人"}, {"id": "U23", "side": "全共斗", "unit": "本乡增援（日大·他大）", "desc": "15–17 日陆续入构的支援部队（日大共斗 40、他大数百）；可投入本乡任何据点。", "n": 450, "lat": 35.7126, "lng": 139.7609, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "全共斗", "nunit": "人"}, {"id": "U24", "side": "民青", "unit": "教育学部（民青据点）", "desc": "1/9 教育学部有民青武装约 3,000 人；1/10 秩父宮集会由民青主导；1/14 19:57 千人示威自此出发。", "n": 300, "lat": 35.71099, "lng": 139.761, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "民青", "nunit": "人"}, {"id": "U25", "side": "民青", "unit": "第2食堂（民青据点）", "desc": "1/1 15:00 民青约 180 人向第二食堂示威；1/10 0:30 示威后分散入第 2 食堂等据点。", "n": 150, "lat": 35.71366, "lng": 139.76441, "conf": "推定", "src": ["S1"], "zone": "本乡", "floor": null, "sect": "民青", "nunit": "人"}, {"id": "U26", "side": "民青", "unit": "驹场第1·2本馆（民青）", "desc": "12 日 20:30 驹场民青＋班级联合战术占据学生会馆·1 号馆并夺回第 1·2 本馆。", "n": 300, "lat": 35.6605, "lng": 139.6852, "conf": "B", "src": ["S1"], "zone": "驹场", "floor": null, "sect": "民青", "nunit": "人"}, {"id": "U27", "side": "机动队", "unit": "御茶之水站前派出所（守备）", "desc": "18 日 09:35 被 150 人袭击破玻璃；19 日 12:50 前后再被占据·放火。", "n": 40, "lat": 35.699, "lng": 139.7648, "conf": "B", "src": ["S1"], "zone": "神田", "floor": null, "sect": "机动队", "nunit": "人"}], "events": [{"minute": 390, "date": "1969-01-18", "time_label": "06:30", "precision": "小时", "event": "警视厅依大学正式要請，在本富士署设总合警备本部；第1—第8机动队及各方面部队 8,000 人、私服 500 人，合计 8,500 人。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 390, "date": "1969-01-18", "time_label": "06:30", "precision": "小时", "event": "施设部设备課切断占据中及周边建筑的送电（06:45 停水）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 410, "date": "1969-01-18", "time_label": "06:50", "precision": "小时", "event": "第1·第2机动队自农学部正门入构，过陆桥向工学部。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 423, "date": "1969-01-18", "time_label": "07:03", "precision": "小时", "event": "部队自龙冈门、池之端门入构。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 425, "date": "1969-01-18", "time_label": "07:05", "precision": "小时", "event": "部队自赤门入构。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 430, "date": "1969-01-18", "time_label": "07:10", "precision": "小时", "event": "机动队抵理学部1号馆；馆内无人，1/9 见证验证至 11:30。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 432, "date": "1969-01-18", "time_label": "07:12", "precision": "小时", "event": "弥生门路障撤去。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 440, "date": "1969-01-18", "time_label": "07:20", "precision": "小时", "event": "医学部1号馆（学生5人逮捕）与3号馆解除；中央馆塔屋 16 人抵抗。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 480, "date": "1969-01-18", "time_label": "08:00", "precision": "小时", "event": "对大讲堂形成包围；各所发射催泪弹，直升机上空投弹。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 500, "date": "1969-01-18", "time_label": "08:20", "precision": "小时", "event": "医学部中央馆塔屋 16 人全员逮捕（約 08:30）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 520, "date": "1969-01-18", "time_label": "08:40", "precision": "时段", "event": "列品馆 2·3·4 楼起火，消防车出动（时刻按 11:39 前后报導并列）。", "sources": ["S1", "S34"], "evidence_status": "source_conflict", "variant_group": "", "variant": ""}, {"minute": 530, "date": "1969-01-18", "time_label": "08:50", "precision": "小时", "event": "工学部列品馆排除开始：社学同 ML 派以投石、燃烧瓶、瓦斯管自制火焰喷射器抵抗。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 540, "date": "1969-01-18", "time_label": "09:00", "precision": "小时", "event": "放水车 10 数台向大讲堂放水。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 540, "date": "1969-01-18", "time_label": "09:00", "precision": "小时", "event": "法学部研究室排除开始（中核派·四托洛）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 545, "date": "1969-01-18", "time_label": "09:15", "precision": "小时", "event": "教育学部解除（09:15 令状、机动队約 100 人一巡、11:20 验证終了）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 560, "date": "1/18", "time_label": "09:20", "precision": "小时", "event": "驹场代表团系约 300 人示威；11:00 明大和泉约 50 人正门前静坐，驹场学生加入超 100 人。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 575, "date": "1/18", "time_label": "09:35", "precision": "分钟", "event": "神田：明大学生会馆出发约 150 人袭御茶之水站前派出所，破玻璃约 15 分后退去。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 590, "date": "1/18", "time_label": "09:50", "precision": "分钟", "event": "神田：中大社学同约 100 人掘 YMCA 前铺石，袭御茶之水与骏河台下派出所。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 660, "date": "1969-01-18", "time_label": "11:00", "precision": "小时", "event": "装甲车破壞列品馆路障，部队自后门与法文1号馆突入、制压 1 楼。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 660, "date": "1/18", "time_label": "11:00", "precision": "小时", "event": "神田：日大共斗约 50 人＋社学同约 150 人示威，正午前机动队发射催泪弹。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 700, "date": "1969-01-18", "time_label": "11:40", "precision": "小时", "event": "法学部研究室突入 3 楼；学生在屋顶浇汽油纵火。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 780, "date": "1969-01-18", "time_label": "13:00", "precision": "小时", "event": "列品馆屋顶突入，逮捕 32 人（女 3、重伤 2）；学生喊「瓦斯弹直击伤及学友，停止攻击，无条件投降」。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 800, "date": "1969-01-18", "time_label": "13:20", "precision": "小时", "event": "对大讲堂本格攻击开始；装甲车接近庶務部入口，被燃烧瓶点燃。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 810, "date": "1969-01-18", "time_label": "13:30", "precision": "小时", "event": "神田：逃入明大·中大的学生增至約 1,500 人，喊「攻击警视厅」；自东大抽调机动队 900 人，合計 2,000 人阻止。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 810, "date": "1/18", "time_label": "13:30", "precision": "分钟", "event": "神田：逃入明大/中大者约 1,500 人喊「警视厅攻击」；东大从机动队 900 人增派，以 2,000 人阻止。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 875, "date": "1969-01-18", "time_label": "14:35", "precision": "小时", "event": "直升机散布铁桶催泪液。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 920, "date": "1969-01-18", "time_label": "15:20", "precision": "小时", "event": "正面攻击。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 930, "date": "1969-01-18", "time_label": "15:30", "precision": "小时", "event": "背面 2 處約 50 人突入。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 935, "date": "1969-01-18", "time_label": "15:35", "precision": "小时", "event": "法学部研究室屋顶突入，逮捕 121 人（中核派·四托洛）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 970, "date": "1969-01-18", "time_label": "16:10", "precision": "小时", "event": "大讲堂 2 楼被侵入。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 980, "date": "1969-01-18", "time_label": "16:20", "precision": "小时", "event": "电锯破门。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1050, "date": "1969-01-18", "time_label": "17:30", "precision": "小时", "event": "警备本部下令中止，部队退去（S34 作 17:10 中止、17:19 广播重开）。", "sources": ["S1", "S34"], "evidence_status": "source_conflict", "variant_group": "", "variant": ""}, {"minute": 1070, "date": "1/18", "time_label": "17:50", "precision": "分钟", "event": "神田：私服警官 1 人被带入明大学生会馆，机动队约 200 人突入救出。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1140, "date": "1969-01-18", "time_label": "19:00", "precision": "小时", "event": "放水车配置，断续放水至翌朝。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1200, "date": "1/18", "time_label": "20:00", "precision": "小时", "event": "神田：主力撤回中大，决议「明日再攻东大」，22 时解散。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1290, "date": "1969-01-18", "time_label": "21:30", "precision": "小时", "event": "加藤总长代行发表声明：退去期限延至 20 日 10 时。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1439, "date": "1969-01-18", "time_label": "23:59", "precision": "日", "event": "本乡构内逮捕 273 人（S1 日末统计，无具体时刻，此处置于日末）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1800, "date": "1969-01-19", "time_label": "06:00", "precision": "小时", "event": "机动队在大讲堂周边重新集结。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1860, "date": "1969-01-19", "time_label": "07:00", "precision": "小时", "event": "放水再开；部队自南北突入。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1980, "date": "1969-01-19", "time_label": "09:00", "precision": "小时", "event": "放水达 5 楼；直升机风压支援；装甲车接近；木造隧道施设。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1980, "date": "1969-01-19", "time_label": "09:00", "precision": "小时", "event": "神田：过夜约 800 人行动开始，御茶之水站与明大通一帶构筑 10 處街垒。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 1980, "date": "1/19", "time_label": "09:00", "precision": "分钟", "event": "神田：明大·日大过夜约 800 人行动开始，御茶之水站与明大通一带街垒 10 处。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2000, "date": "1969-01-19", "time_label": "09:20", "precision": "小时", "event": "各层楼梯街垒加固；部队以绳索·电动电钻·切割机拆除。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2160, "date": "1969-01-19", "time_label": "12:00", "precision": "小时", "event": "2 楼 20 数人被捕（一說 12:15）。", "sources": ["S1", "S34"], "evidence_status": "source_conflict", "variant_group": "", "variant": ""}, {"minute": 2210, "date": "1969-01-19", "time_label": "12:50", "precision": "小时", "event": "神田：御茶之水橋都电被拦停、一时占据；本乡2丁目冲突。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2210, "date": "1/19", "time_label": "12:50", "precision": "分钟", "event": "神田：御茶之水桥拦停都电、赶下司机车掌；本乡2丁目冲突，至夜 75 人逮捕。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2215, "date": "1969-01-19", "time_label": "12:55", "precision": "小时", "event": "3 楼学生部付近被制压。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2270, "date": "1969-01-19", "time_label": "13:50", "precision": "小时", "event": "南側 2→3 楼楼梯激战。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2325, "date": "1969-01-19", "time_label": "14:45", "precision": "小时", "event": "3 楼街垒撤去；15 时頃馆内 200 人以上被捕。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2355, "date": "1969-01-19", "time_label": "15:35", "precision": "小时", "event": "4→5 楼；北側屋顶抵抗約 10 分鐘停止。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2370, "date": "1969-01-19", "time_label": "15:50", "precision": "小时", "event": "守备队全部被捕（S34；S1 作 15:00 过后 200 人以上、15:35 推进）。", "sources": ["S34", "S1"], "evidence_status": "source_conflict", "variant_group": "", "variant": ""}, {"minute": 2430, "date": "1969-01-19", "time_label": "16:30", "precision": "小时", "event": "5 楼南側屋顶＝反帝学评、6 楼阳台＝社学同；唱国际歌、反帝学评領袖演说。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2487, "date": "1969-01-19", "time_label": "17:27", "precision": "小时", "event": "钟楼突入。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2500, "date": "1969-01-19", "time_label": "17:40", "precision": "小时", "event": "南側屋顶与 6 楼阳台 60 人逮捕。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2505, "date": "1969-01-19", "time_label": "17:45", "precision": "小时", "event": "钟楼屋顶共产同数人被捕——最后一人。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2562, "date": "1/19", "time_label": "18:42", "precision": "分钟", "event": "神田：本乡2·3丁目两次冲突，街垒维持至 22 时。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2580, "date": "1969-01-19", "time_label": "19:00", "precision": "小时", "event": "公安部验证至 21:00：押收 25 件 901 点、敷石等 14 袋、无炸药。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2580, "date": "1969-01-19", "time_label": "19:00", "precision": "小时", "event": "神田：本乡2·3丁目两次冲突（18:42—20:00）、街垒至 22 时撤除；至夜间 75 人逮捕。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2760, "date": "1/19", "time_label": "22:00", "precision": "小时", "event": "神田：机动队趁总会后撤离时一齐推进，街垒撤除。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2880, "date": "1969-01-20", "time_label": "10:00", "precision": "小时", "event": "退去期限（18 日 21:30 声明）。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2970, "date": "1969-01-20", "time_label": "11:30", "precision": "小时", "event": "佐藤首相·坂田文相一行自龙冈门来学約 1 小时，加藤案内视察安田讲堂、法研。", "sources": ["S1"], "evidence_status": "published_account", "variant_group": "", "variant": ""}, {"minute": 2970, "date": "1969-01-20", "time_label": "11:30", "precision": "小时", "event": "文部省与东大会談，入試中止最終决定（S27 二传说，C 级）。", "sources": ["S27"], "evidence_status": "unverified", "variant_group": "", "variant": ""}], "zones": [{"id": "本乡", "name": "本乡构内", "lat": 35.7129, "lng": 139.7618, "zoom": 17}, {"id": "神田", "name": "神田·御茶之水", "lat": 35.6987, "lng": 139.7642, "zoom": 16}, {"id": "驹场", "name": "驹场", "lat": 35.6602, "lng": 139.6851, "zoom": 16}], "sites": [{"id": "kanda_barricade", "name": "神田街垒（10 处）", "lat": 35.6993, "lng": 139.7642, "zone": "神田", "holder": "全共斗", "str": 800, "barrier": 80}, {"id": "meidai", "name": "明大骏河台", "lat": 35.6978, "lng": 139.7621, "zone": "神田", "holder": "全共斗", "str": 300, "barrier": 60}, {"id": "ochano_police", "name": "御茶之水站前派出所", "lat": 35.699, "lng": 139.7648, "zone": "神田", "holder": "机动队", "str": 40, "barrier": 40}, {"id": "komaba_hachi", "name": "驹场第8本馆", "lat": 35.6594, "lng": 139.6847, "zone": "驹场", "holder": "全共斗", "str": 100, "barrier": 60}, {"id": "komaba_honkan", "name": "驹场第1·2本馆", "lat": 35.6605, "lng": 139.6852, "zone": "驹场", "holder": "民青", "str": 300, "barrier": 50}, {"id": "dai2shokudo", "name": "第2食堂", "lat": 35.71366, "lng": 139.76441, "zone": "本乡", "holder": "民青", "str": 150, "barrier": 40}], "buildings": [{"id": "yasuda_hall", "name": "安田讲堂", "lat": 35.713428, "lng": 139.762297, "zone": "本乡", "holder": "全共斗", "str": 397, "barrier": 100, "floors": true, "note": "馆内 397 人（S34 逮捕数）"}, {"id": "reppinkan", "name": "工学部列品馆", "lat": 35.71395, "lng": 139.76035, "zone": "本乡", "holder": "社学同 ML派", "str": 50, "barrier": 80, "note": "1/15 16:00 占据；1/18 08:50 排除"}, {"id": "houbou_ken", "name": "法学部研究室（法研）", "lat": 35.7127, "lng": 139.7603, "zone": "本乡", "holder": "中核派", "str": 130, "barrier": 70, "note": "15:35 屋顶突入时 121 人被捕（S1）"}, {"id": "houbun2", "name": "法文2号馆", "lat": 35.713, "lng": 139.7606, "zone": "本乡", "holder": "革马派", "str": 14, "barrier": 60, "note": "1/18 09:00 屋顶全员 14 人被捕"}, {"id": "igaku_c", "name": "医学部综合中央馆", "lat": 35.710798, "lng": 139.76326, "zone": "本乡", "holder": "全共斗", "str": 16, "barrier": 40, "note": "16 人塔屋抵抗至 08:30"}, {"id": "igaku_h", "name": "医学部本馆", "lat": 35.7108, "lng": 139.7618, "zone": "本乡", "holder": "民青", "str": 200, "barrier": 60, "note": "民青 200 人守备；1/18 未被攻"}, {"id": "kogakubu1", "name": "工学部1号馆", "lat": 35.714231, "lng": 139.76006, "zone": "本乡", "holder": "反帝学评", "str": null, "barrier": 30, "note": "1/12 15:00 反帝学评系再封锁工学部 1·2·7·8 号馆与列品馆（S1）；1/18 07:00 责任教官见证下解除，馆内无人，以不退去罪逮 1 人"}, {"id": "kyoiku", "name": "教育学部", "lat": 35.710989, "lng": 139.761, "zone": "本乡", "holder": "民青", "str": 300, "barrier": 50, "note": "民青据点（兵力为推定）；1/18 08:15 太田学部长应待→09:15 令状→机动队約 100 人一巡→11:20 验证終了，无人被捕，押收胶合板盾 18 等"}, {"id": "rigaku1", "name": "理学部1号馆", "lat": 35.7137, "lng": 139.76298, "zone": "本乡", "holder": "反帝学评", "str": null, "barrier": 10, "note": "1/15 16:00 反帝学评主力約 150 人侵入；1/17 10:00 社学同約 50 人退去入大讲堂、12:00 再封锁；1/18 07:10 机动队到着·07:20 破门，馆内无人"}, {"id": "kanda_barricade", "name": "神田街垒（10 处）", "lat": 35.6993, "lng": 139.7642, "zone": "神田", "holder": "全共斗", "str": 800, "barrier": 80}, {"id": "meidai", "name": "明大骏河台", "lat": 35.6978, "lng": 139.7621, "zone": "神田", "holder": "全共斗", "str": 300, "barrier": 60}, {"id": "ochano_police", "name": "御茶之水站前派出所", "lat": 35.699, "lng": 139.7648, "zone": "神田", "holder": "机动队", "str": 40, "barrier": 40}, {"id": "komaba_hachi", "name": "驹场第8本馆", "lat": 35.6594, "lng": 139.6847, "zone": "驹场", "holder": "全共斗", "str": 100, "barrier": 60}, {"id": "komaba_honkan", "name": "驹场第1·2本馆", "lat": 35.6605, "lng": 139.6852, "zone": "驹场", "holder": "民青", "str": 300, "barrier": 50}, {"id": "dai2shokudo", "name": "第2食堂", "lat": 35.71366, "lng": 139.76441, "zone": "本乡", "holder": "民青", "str": 150, "barrier": 40}], "floors0": {"1": {"holder": "全共斗", "sect": "全共斗", "mix": "", "n": 40, "b": 70, "note": "本乡本科生部队 40 人，守四处楼梯（S34）"}, "2": {"holder": "中核派", "sect": "中核派", "mix": "全斗联·青医联", "n": 30, "b": 80, "note": "二层约 30 人为中核派＋全斗联＋青医联混成，12:15 被捕 20 余名（S34）"}, "3": {"holder": "全共斗", "sect": "全共斗", "mix": "", "n": null, "b": 80, "note": "大讲堂 961 席层；3 层为台地面"}, "4": {"holder": "全共斗", "sect": "全共斗", "mix": "", "n": null, "b": 70, "note": "大讲堂上部 777 席；便殿·总长应接室"}, "5": {"holder": "反帝学评", "sect": "反帝学评", "mix": "社学同（右半）", "n": null, "b": 70, "note": "5 层南侧屋顶＝反帝学评、6 层阳台＝社学同（S1 16:30）"}, "6": {"holder": "中核派", "sect": "中核派", "mix": "", "n": null, "b": 60, "note": "钟楼；全馆最后失守处（17:27／17:45）"}}, "figures": [{"side": "机动队", "metric": "出动兵力", "value": 8500, "qualifier": "人", "scope": "1969-01-18 06:30 总合警备本部", "note": "第1—第8机动队 8,000＋私服 500；不是同一时刻投入正面的人数。", "sources": ["S1"], "evidence_status": "published_account"}, {"side": "机动队", "metric": "出动兵力（細目）", "value": 8513, "qualifier": "人", "scope": "18 日全日", "note": "S34 細目：8 队 4,678＋另两方面 2,565＋预备与干部 1,000 餘；与 S1 总数差 13 人。", "sources": ["S34"], "evidence_status": "source_conflict"}, {"side": "机动队", "metric": "战车·放水车", "value": 12, "qualifier": "辆", "scope": "18 日", "note": "S34 作 12 辆水龙车；S1 只作「10 数台」。", "sources": ["S34", "S1"], "evidence_status": "source_conflict"}, {"side": "机动队", "metric": "催泪弹", "value": 10000, "qualifier": "发", "scope": "18 日", "note": "朝日新闻引述（二手，C 级）；S34 作 10,528 发、瓦斯銃 500 支。", "sources": ["S27", "S34"], "evidence_status": "unverified"}, {"side": "机动队", "metric": "警察側负伤", "value": 653, "qualifier": "人", "scope": "18—19 日", "note": "国会答辩（荒木萬壽夫 1969-03-25）：「六百五十三名、内入院 37 名」。", "sources": ["S2"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "讲堂内逮捕", "value": 397, "qualifier": "人", "scope": "19 日", "note": "S34 数字；S1 未给馆内总数，只给「200 人以上」与分楼层逮捕。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "讲堂内逮捕（另说）", "value": 374, "qualifier": "人", "scope": "19 日", "note": "S35 数字。", "sources": ["S35"], "evidence_status": "source_conflict"}, {"side": "全共斗", "metric": "屋顶逮捕", "value": 90, "qualifier": "人", "scope": "19 日 17:30", "note": "S34：「頂层平台上約 90 名青年学生全部被捕」。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "本乡构内逮捕", "value": 273, "qualifier": "人", "scope": "18 日", "note": "S1 日末统计。", "sources": ["S1"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "大讲堂逮捕", "value": 469, "qualifier": "人", "scope": "19 日", "note": "S1 日末「其他」栏。", "sources": ["S1"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "检举总数", "value": 633, "qualifier": "人", "scope": "18—19 日", "note": "警视厅记录（S34 引）；其中东大生 38 人。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "检举总数（另说）", "value": 983, "qualifier": "人", "scope": "18—19 日", "note": "S35 数字（含神田）。", "sources": ["S35"], "evidence_status": "source_conflict"}, {"side": "全共斗", "metric": "起訴", "value": 607, "qualifier": "人", "scope": "最終", "note": "最高裁刑事局；1969-03 时点 509 人。", "sources": ["S3"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "学生负伤（重伤）", "value": 76, "qualifier": "人", "scope": "18—19 日", "note": "S34：「失明 1 人、重伤 76 人」；另「面部被瓦斯弹击中者 18 名」。", "sources": ["S34"], "evidence_status": "published_account"}, {"side": "全共斗", "metric": "东大事件受理", "value": 984, "qualifier": "人", "scope": "1969-01-09—19", "note": "犯罪白书（檢察阶段受理，非逮捕数）。", "sources": ["S41"], "evidence_status": "published_account"}, {"side": "市民", "metric": "物件損害", "value": 450000000, "qualifier": "日元", "scope": "18—19 日", "note": "国会答辩（冈沢完治 1969-03-19）：「四億五千萬圆」。", "sources": ["S2"], "evidence_status": "published_account"}], "gaps": [["各层人数", "讲堂 3—5 层各派人数与屋頂 90 人的派系构成", "S34/S35 均未給；S1 只給分楼层逮捕", "B01"], ["指揮系統", "学生側总指揮与各派部队的实际指揮關係", "S34 称本乡学生队长對党派部队无指揮权；上层未见成文命令", "B02"], ["闭回路", "馆内厕所·飲水·补给的实际状况", "S34 明确「连水都沒有儲备」；S1 只記 06:45 停水", "B03"], ["警方計劃", "警备实施要領（部队分区、时刻表）", "未公开；东京都公文书馆/情报公开請求", "B04"], ["照片", "1969-01-18/19 现场照片", "版权在共同通信/朝日，仅限法人", "B05"], ["现场直播", "NHK 是否「现场直播」及其节目名", "S46 两日节目表无独立现场直播；仅特别节目与新闻焦点", "B06"], ["时刻異文", "18 日中止时刻（17:10/17:30/17:40）、19 日結束（17:45/17:46）", "S1 与 S34 直接冲突，并列不裁决", "B07"]]}</script>
+<script id="geo" type="application/json">{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7594355,35.7128991],[139.7595234,35.7129154],[139.7596604,35.7129409],[139.7598207,35.7129707],[139.7603986,35.7130782],[139.7609415,35.7131791],[139.7594355,35.7128991]]]},"properties":{"id":33050411,"name":"銀杏並木","levels":"","building":"","tags":{"architect":"本多静六","architect:wikidata":"Q11520098","bicycle":"yes","highway":"pedestrian","lit":"yes","name":"銀杏並木","name:fr":"Allée de ginkgos","source":"Bing 2010","start_date":"1906","surface":"paving_stones","wikipedia":"ja:本多静六"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7617333,35.7122689],[139.761708,35.7122665],[139.7616239,35.7123185],[139.7615792,35.7123883],[139.7616663,35.7123669],[139.7617966,35.712339],[139.7619263,35.7123331],[139.7620029,35.7123537],[139.7621291,35.7123975],[139.762196,35.7125006],[139.7622755,35.7124987],[139.7624056,35.7124957],[139.7623674,35.7124753],[139.7622982,35.7124274],[139.7622659,35.7124051],[139.7622877,35.7122473],[139.7622847,35.7121792],[139.7622668,35.7120823],[139.7622258,35.7120001],[139.7623244,35.7119336],[139.7623564,35.7118258],[139.7622814,35.7117536],[139.7622354,35.7117092],[139.7621779,35.7117322],[139.7621547,35.7118641],[139.7621756,35.7119485],[139.7620945,35.7120087],[139.761994,35.7120536],[139.7618845,35.7121432],[139.7617333,35.7122689],[139.7617333,35.7122689]]]},"properties":{"id":53208162,"name":"三四郎池","levels":"","building":"","tags":{"name":"三四郎池","name:en":"Sanshiro Pond","name:es":"Estante Sanshiro","name:fr":"Étang Sanshiro","name:ja-Hira":"さんしろうち","name:ja-Latn":"Sanshirō-chi","natural":"water","water":"pond"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7620608,35.7150938],[139.7621149,35.7148932],[139.7625678,35.7149692],[139.7625619,35.7149852],[139.7626408,35.7150661],[139.7625974,35.7150922],[139.7626188,35.7151151],[139.7624674,35.7152046],[139.7623278,35.7150552],[139.7622434,35.7151125],[139.762354,35.7152249],[139.7622012,35.7153261],[139.7621599,35.7152861],[139.7620343,35.7152638],[139.7620738,35.7151339],[139.7621826,35.7151518],[139.7622183,35.715123],[139.7620608,35.7150938],[139.7620608,35.7150938]]]},"properties":{"id":122948715,"name":"工学部13号館","levels":"3","building":"university","tags":{"building":"university","building:levels":"3","name":"工学部13号館","name:en":"Faculty of Engineering Building 13","name:ja":"工学部13号館","source":"Bing, 2007-04"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7594215,35.7145872],[139.7595786,35.7139741],[139.7593535,35.7139361],[139.7591953,35.714553],[139.7592379,35.7145602],[139.759231,35.7145873],[139.7593145,35.7146014],[139.7593224,35.7145704],[139.7594215,35.7145872],[139.7594215,35.7145872]]]},"properties":{"id":122948716,"name":"工学部14号館","levels":"11","building":"university","tags":{"building":"university","building:levels":"11","name":"工学部14号館","name:en":"Faculty of Engineering Building 14","name:ja":"工学部14号館","source":"Bing, 2007-04"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.760304,35.7129317],[139.7603256,35.7128518],[139.7603471,35.7128556],[139.7603697,35.712772],[139.7603503,35.7127685],[139.7604283,35.7124809],[139.7604487,35.7124845],[139.7604734,35.7123935],[139.7604505,35.7123894],[139.7604699,35.7123176],[139.7601775,35.7122653],[139.7601569,35.7123409],[139.7601365,35.7123374],[139.7600123,35.7127975],[139.7600361,35.7128017],[139.7600146,35.7128806],[139.7600928,35.7128946],[139.7601018,35.7128615],[139.7602319,35.7128847],[139.7602231,35.7129172],[139.760304,35.7129317],[139.760304,35.7129317]]]},"properties":{"id":122948722,"name":"法学部3号館","levels":"4","building":"university","tags":{"building":"university","building:levels":"4","name":"法学部3号館","name:en":"Faculty of Law Building 3","name:ja":"法学部3号館"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7595755,35.7146039],[139.7597048,35.7141151],[139.75974,35.7141213],[139.7597478,35.7140915],[139.759787,35.7140984],[139.7597929,35.714076],[139.7600115,35.7141141],[139.7600181,35.7140891],[139.7601148,35.714106],[139.7602114,35.7141228],[139.7602046,35.7141488],[139.7604315,35.7141884],[139.7604253,35.7142122],[139.7604602,35.7142183],[139.7604512,35.7142522],[139.760474,35.7142561],[139.7603464,35.7147384],[139.7595755,35.7146039],[139.7595755,35.7146039]]]},"properties":{"id":122948728,"name":"工学部1号館","levels":"4","building":"university","tags":{"building":"university","building:levels":"4","name":"工学部1号館","name:en":"Faculty of Engineering Building 1","name:ja":"工学部1号館","source":"Bing, 2007-04","toilets:wheelchair":"no","wheelchair":"yes"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7603286,35.7149997],[139.7603768,35.714824],[139.759448,35.7146562],[139.7593283,35.7146346],[139.759308,35.7147087],[139.7592164,35.7146922],[139.7591885,35.7147938],[139.7594012,35.7148322],[139.7603286,35.7149997],[139.7603286,35.7149997]]]},"properties":{"id":122948737,"name":"工学部5号館","levels":"","building":"university","tags":{"building":"university","name":"工学部5号館","name:en":"Faculty of Engineering Building 5","name:ja":"工学部5号館","source":"Bing, 2007-04"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7593588,35.7138693],[139.7594728,35.7134415],[139.7596055,35.7134648],[139.7595204,35.7137843],[139.759577,35.7137943],[139.7595488,35.7139002],[139.7594713,35.7138866],[139.7594658,35.7139071],[139.7594152,35.7138982],[139.75942,35.7138801],[139.7593588,35.7138693],[139.7593588,35.7138693]]]},"properties":{"id":122948745,"name":"工学部11号館","levels":"","building":"university","tags":{"building":"university","name":"工学部11号館","name:en":"Faculty of Engineering Building 11","name:ja":"工学部11号館","source":"Bing, 2007-04"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7604277,35.7147259],[139.7604788,35.7145567],[139.760517,35.7145643],[139.7612971,35.7147121],[139.7613551,35.7147231],[139.7613065,35.7148924],[139.7612455,35.7148808],[139.7610427,35.7148424],[139.7609894,35.7150278],[139.7606245,35.7149587],[139.7606777,35.7147736],[139.7604611,35.7147326],[139.7604277,35.7147259],[139.7604277,35.7147259]]]},"properties":{"id":122948747,"name":"工学部8号館","levels":"9","building":"university","tags":{"building":"university","building:levels":"9","name":"工学部8号館","name:en":"Faculty of Engineering Building 8","name:ja":"工学部8号館","operator":"東京大学","source":"Bing, 2007-04","wheelchair":"yes"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7612108,35.7152161],[139.760351,35.7150553],[139.760343,35.7150835],[139.7602638,35.7150687],[139.7602351,35.71517],[139.7611741,35.7153455],[139.7612108,35.7152161],[139.7612108,35.7152161]]]},"properties":{"id":122948752,"name":"工学部7号館","levels":"6","building":"university","tags":{"building":"university","building:levels":"6","layer":"1","name":"工学部7号館","name:en":"Faculty of Engineering Building 7","name:ja":"工学部7号館","source":"Bing, 2007-04"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7630123,35.7114833],[139.7638473,35.7114624],[139.7638885,35.7125489],[139.7630026,35.7125711],[139.762997,35.7124235],[139.763048,35.7124222],[139.7630123,35.7114833],[139.7630123,35.7114833]]]},"properties":{"id":134459700,"name":"御殿下グラウンド","levels":"","building":"","tags":{"leisure":"pitch","name":"御殿下グラウンド","name:en":"Gotenshita Ground","name:es":"Campo Gotenshita","name:fr":"Terrain de sport Gotenshita","name:ja-Hira":"ご でんか グラウンド","name:ja-Latn":"Godenshita guraundo","sport":"soccer","wheelchair":"limited"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7620732,35.7133513],[139.7620939,35.7133548],[139.7621062,35.7133466],[139.7621383,35.7132284],[139.7621867,35.7132367],[139.7622075,35.7131589],[139.7623592,35.7131817],[139.7623483,35.7132225],[139.7624406,35.7132546],[139.76251,35.7133117],[139.7625421,35.7132933],[139.7625743,35.7133436],[139.762538,35.7133565],[139.762553,35.7134145],[139.7625476,35.7134737],[139.7625184,35.7135346],[139.762474,35.7135805],[139.7625031,35.713601],[139.7624488,35.7136371],[139.7624252,35.7136104],[139.762339,35.7136361],[139.7622441,35.7136354],[139.7622329,35.7136747],[139.7620745,35.7136465],[139.7620988,35.7135626],[139.7620495,35.7135554],[139.7620813,35.7134383],[139.7620735,35.7134283],[139.7620525,35.7134248],[139.7620732,35.7133513],[139.7620732,35.7133513]]]},"properties":{"id":134668789,"name":"安田講堂","levels":"4","building":"university","tags":{"building":"university","building:levels":"4","name":"安田講堂","name:en":"Yasuda Auditorium","name:es":"Auditorio Yasuda","name:fr":"Auditorium Yasuda","name:ja":"安田講堂","source":"Bing, 2014-09","tourism":"attraction","wheelchair":"no","wikidata":"Q8191484","wikimedia_commons":"Category:Yasuda Auditorium","wikipedia":"ja:安田講堂"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7604394,35.713468],[139.760414,35.7134635],[139.7604645,35.7132777],[139.7604882,35.713282],[139.7605047,35.7132275],[139.7605849,35.7132427],[139.7605926,35.7132157],[139.7606804,35.713232],[139.7606736,35.7132595],[139.7607959,35.7132827],[139.7608117,35.7132672],[139.7608446,35.7132727],[139.7608505,35.7132931],[139.760907,35.7133038],[139.7609658,35.7133149],[139.7609842,35.7133011],[139.761015,35.7133071],[139.7610211,35.7133147],[139.7611587,35.7133373],[139.7611625,35.71333],[139.761258,35.7133469],[139.7612505,35.7133675],[139.7613086,35.7133789],[139.7613041,35.7133928],[139.7614342,35.7134142],[139.7615158,35.713519],[139.7615069,35.7135509],[139.7615322,35.7135557],[139.7615208,35.713597],[139.7614953,35.7135931],[139.7614848,35.7136308],[139.7613593,35.7136915],[139.7611673,35.7136605],[139.7611632,35.7136795],[139.7609426,35.7136381],[139.7609198,35.7136501],[139.7608843,35.7136425],[139.7608759,35.713626],[139.7608204,35.7136159],[139.7607607,35.713605],[139.7607408,35.7136185],[139.7607167,35.7136136],[139.7607098,35.7135957],[139.7606711,35.7135886],[139.7606776,35.7135668],[139.7605972,35.713552],[139.7605918,35.7135754],[139.7604945,35.7135569],[139.7605001,35.7135343],[139.7604247,35.7135205],[139.7604394,35.713468],[139.7604394,35.713468]]]},"properties":{"id":134668792,"name":"法文1号館","levels":"3","building":"university","tags":{"building":"university","building:levels":"3","name":"法文1号館","name:en":"Law & Letters Building 1","name:es":"Edificio de Leyes y Letras 2","name:ja":"法文1号館","source":"Bing, 2011-10","toilets:wheelchair":"yes","wheelchair":"yes"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7608617,35.710184],[139.7608195,35.7101765],[139.7608252,35.7101557],[139.7607488,35.7101421],[139.7607431,35.7101635],[139.760703,35.7101564],[139.7606054,35.7105183],[139.7614837,35.7106744],[139.7615238,35.7105256],[139.760804,35.7103977],[139.7608617,35.710184],[139.7608617,35.710184]]]},"properties":{"id":137625387,"name":"赤門総合研究棟","levels":"7","building":"university","tags":{"building":"university","building:levels":"7","name":"赤門総合研究棟","name:ja":"赤門総合研究棟"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7627566,35.7139218],[139.7630116,35.7139689],[139.7630265,35.7139156],[139.7630341,35.7138886],[139.7630667,35.7137722],[139.7630823,35.7137167],[139.7630921,35.7136816],[139.7631275,35.7135555],[139.7631348,35.7135294],[139.7631514,35.7134702],[139.7631044,35.7134615],[139.7628965,35.7134231],[139.7628371,35.713635],[139.7628262,35.7136737],[139.7628117,35.7137256],[139.7627566,35.7139218],[139.7627566,35.7139218]]]},"properties":{"id":137625393,"name":"理学部1号館 西棟","levels":"12","building":"university","tags":{"building":"university","building:levels":"12","building:levels:underground":"2","name":"理学部1号館 西棟","name:en":"Faculty of Science Building 1 West Wing","name:ja":"理学部1号館 西棟","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7623246,35.7102994],[139.7625668,35.7094083],[139.7622536,35.7093521],[139.7620114,35.7102432],[139.7623246,35.7102994],[139.7623246,35.7102994]]]},"properties":{"id":137625399,"name":"医学部教育研究棟","levels":"14","building":"university","tags":{"building":"university","building:levels":"14","name":"医学部教育研究棟","name:en":"Faculty of Medicine Building","name:ja":"医学部教育研究棟","wikidata":"Q11524669"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7630148,35.7093847],[139.7630311,35.709401],[139.7630637,35.7094094],[139.7630854,35.7093991],[139.7631697,35.7094141],[139.7631834,35.7094309],[139.7632182,35.7094348],[139.763237,35.709424],[139.7632467,35.7093957],[139.7632355,35.7093795],[139.763336,35.708994],[139.7633545,35.7089826],[139.7633628,35.7089549],[139.7633475,35.7089372],[139.7633136,35.7089325],[139.763296,35.7089412],[139.7632112,35.7089262],[139.7632021,35.7089116],[139.7631648,35.7089044],[139.7631422,35.7089157],[139.7631343,35.7089411],[139.7631468,35.7089563],[139.7630464,35.709345],[139.7630232,35.709356],[139.7630148,35.7093847],[139.7630148,35.7093847]]]},"properties":{"id":137625407,"name":"第2本部棟","levels":"8","building":"university","tags":{"building":"university","building:levels":"8","name":"第2本部棟","name:en":"Headquarters Building 2","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7611908,35.71038],[139.7612481,35.7103902],[139.7612425,35.7104111],[139.7614939,35.7104559],[139.7615001,35.7104333],[139.7615388,35.7104402],[139.7615472,35.7104092],[139.7615943,35.7104176],[139.7616105,35.7103578],[139.761567,35.7103501],[139.7615832,35.7102903],[139.7615421,35.7102829],[139.7615486,35.7102589],[139.7612959,35.7102139],[139.7612905,35.710234],[139.761233,35.7102238],[139.7611908,35.71038],[139.7611908,35.71038]]]},"properties":{"id":137625413,"name":"経済学研究科棟","levels":"14","building":"university","tags":{"building":"university","building:levels":"14","name":"経済学研究科棟","name:ja":"経済学研究科棟","roof:shape":"flat"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7625136,35.7112215],[139.7628103,35.7112465],[139.7628314,35.7110821],[139.7625347,35.7110571],[139.7625178,35.7111867],[139.7625136,35.7112215],[139.7625136,35.7112215]]]},"properties":{"id":137625419,"name":"医学部国際共同研究棟","levels":"2","building":"university","tags":{"building":"university","building:levels":"2","name":"医学部国際共同研究棟"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7642711,35.7134687],[139.7642791,35.7135166],[139.7642754,35.7135374],[139.7642718,35.713558],[139.7642521,35.7135924],[139.7642241,35.7136244],[139.7641893,35.7136505],[139.7642134,35.7136758],[139.7642003,35.7136892],[139.7641936,35.7137142],[139.7641987,35.7137363],[139.7642164,35.7137561],[139.7642376,35.7137659],[139.7642986,35.7137792],[139.7642775,35.7138594],[139.764383,35.7138778],[139.7644145,35.7138627],[139.7645656,35.7138929],[139.7646064,35.7137583],[139.7643347,35.7137039],[139.7643279,35.7136919],[139.7643622,35.7136401],[139.7647916,35.7136938],[139.7648008,35.7136438],[139.7648479,35.7136495],[139.764864,35.7135625],[139.7648176,35.7135569],[139.7648266,35.7135081],[139.7643612,35.7134498],[139.7642711,35.7134687],[139.7642711,35.7134687]]]},"properties":{"id":137625420,"name":"第二食堂","levels":"3","building":"university","tags":{"building":"university","building:levels":"3","name":"第二食堂","name:en":"Second Refectory","name:ja":"第二食堂","short_name":"二食","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7630203,35.7108991],[139.7635707,35.7109486],[139.7636039,35.7107054],[139.7632937,35.7106775],[139.7630535,35.7106558],[139.7630203,35.7108991],[139.7630203,35.7108991]]]},"properties":{"id":137625439,"name":"医学部総合中央館","levels":"4","building":"university","tags":{"building":"university","building:levels":"4","name":"医学部総合中央館","wheelchair":"yes"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.764846,35.7101759],[139.765073,35.71017],[139.7650691,35.7100716],[139.7648421,35.7100775],[139.764846,35.7101759],[139.764846,35.7101759]]]},"properties":{"id":137625450,"name":"医学部4号館","levels":"","building":"university","tags":{"building":"university","name":"医学部4号館","name:en":"Faculty of Medicine Building 4","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7628913,35.7123334],[139.7628827,35.7120784],[139.7628248,35.7120797],[139.7628183,35.7118864],[139.7627287,35.7118883],[139.7627271,35.7118416],[139.7626919,35.7118424],[139.7625088,35.7118447],[139.7625108,35.7119507],[139.7625471,35.7119503],[139.7625511,35.7121597],[139.7625539,35.7122633],[139.7626417,35.7122618],[139.762787,35.7122586],[139.7627895,35.7123356],[139.7628913,35.7123334],[139.7628913,35.7123334]]]},"properties":{"id":142583749,"name":"山上会館","levels":"","building":"yes","tags":{"addr:block_number":"3","addr:city":"文京区","addr:country":"JP","addr:housenumber":"1","addr:neighbourhood":"本郷七丁目","addr:postcode":"113-0033","building":"yes","name":"山上会館","name:en":"Sanjo Conference Hall","name:ja":"山上会館","name:ru":"Конференц-зал Сандзё"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7675615,35.7132535],[139.7674377,35.7130389],[139.7676486,35.7129587],[139.7678509,35.7133095],[139.7677635,35.7133427],[139.7677477,35.7133152],[139.7676325,35.713359],[139.7676509,35.7133909],[139.7675714,35.7134211],[139.7674696,35.7134231],[139.7674059,35.7133127],[139.7675615,35.7132535],[139.7675615,35.7132535]]]},"properties":{"id":174315947,"name":"大本 東京本部","levels":"","building":"yes","tags":{"amenity":"place_of_worship","building":"yes","name":"大本 東京本部","name:en":"Omoto Tokyo Headquarters","religion":"omoto","religion:ja":"大本","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7591828,35.7112978],[139.7591926,35.711226],[139.7591618,35.7112233],[139.7591699,35.7111642],[139.7587739,35.7111284],[139.758753,35.7112807],[139.7591218,35.7113141],[139.7591186,35.7113374],[139.7591121,35.7113846],[139.7592288,35.7113952],[139.7593378,35.7114051],[139.7593391,35.7113954],[139.7593669,35.7113979],[139.7593782,35.7113154],[139.7592423,35.7113032],[139.7591828,35.7112978],[139.7591828,35.7112978]]]},"properties":{"id":174759357,"name":"赤門アビタシオン","levels":"","building":"yes","tags":{"building":"yes","name":"赤門アビタシオン","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7628209,35.7098744],[139.7626194,35.7098389],[139.7626414,35.7097563],[139.7626096,35.7097507],[139.7626802,35.7094862],[139.762712,35.7094918],[139.762734,35.7094094],[139.7629356,35.7094449],[139.7628209,35.7098744],[139.7628209,35.7098744]]]},"properties":{"id":224470206,"name":"医学部生命科学実験棟","levels":"6","building":"university","tags":{"building":"university","building:levels":"6","name":"医学部生命科学実験棟","name:en":"Life Science Building","name:ja":"医学部生命科学実験棟","roof:levels":"1"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7621936,35.7092056],[139.7628574,35.7093232],[139.7629124,35.7091511],[139.7622405,35.709027],[139.7621936,35.7092056],[139.7621936,35.7092056]]]},"properties":{"id":224481466,"name":"医学部3号館","levels":"7","building":"university","tags":{"building":"university","building:levels":"7","name":"医学部3号館","name:en":"Faculty of Medicine Building 3"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7622444,35.7089876],[139.7624139,35.7090195],[139.7624219,35.7089915],[139.7624843,35.7090032],[139.762525,35.70886],[139.762554,35.7088654],[139.7625675,35.708818],[139.7625349,35.7088119],[139.7625401,35.7087936],[139.7623537,35.7087586],[139.7623493,35.7087742],[139.7623371,35.7087719],[139.7623323,35.7087888],[139.7623025,35.7087833],[139.7622444,35.7089876],[139.7622444,35.7089876]]]},"properties":{"id":224481467,"name":"医学部3号館別棟","levels":"6","building":"university","tags":{"building":"university","building:levels":"6","name":"医学部3号館別棟","name:en":"Faculty of Medicine Building 3 Annex"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.762954,35.7086462],[139.7629587,35.7085217],[139.7634939,35.708535],[139.7634892,35.7086595],[139.762954,35.7086462],[139.762954,35.7086462]]]},"properties":{"id":224481468,"name":"医学部5号館","levels":"","building":"university","tags":{"building":"university","name":"医学部5号館","name:en":"Faculty of Medicine Building 5"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7600447,35.7123216],[139.7601365,35.7123374],[139.7601569,35.7123409],[139.7601775,35.7122653],[139.760184,35.7122426],[139.7602104,35.7122468],[139.7602227,35.7121997],[139.760278,35.7119873],[139.760138,35.7119633],[139.7601323,35.711985],[139.7600447,35.7123216],[139.7600447,35.7123216]]]},"properties":{"id":224481812,"name":"法学部4号館","levels":"","building":"yes","tags":{"building":"yes","name":"法学部4号館","name:en":"Faculty of Law Building 4"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7610449,35.7123007],[139.7610793,35.712307],[139.7611785,35.712325],[139.7613186,35.7123505],[139.7613546,35.71222],[139.7613044,35.7122109],[139.7612148,35.7121946],[139.7611156,35.7121765],[139.7610808,35.7121702],[139.7610449,35.7123007],[139.7610449,35.7123007]]]},"properties":{"id":224633163,"name":"文学部3号館","levels":"7","building":"university","tags":{"building":"university","building:levels":"7","name":"文学部3号館","name:ja":"文学部3号館"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7604675,35.7106032],[139.7605659,35.7106203],[139.7605767,35.7106222],[139.7614666,35.7107773],[139.7615976,35.7108013],[139.7604675,35.7106032]]]},"properties":{"id":240754421,"name":"赤門通り","levels":"","building":"","tags":{"highway":"service","lit":"yes","name":"赤門通り","name:en":"Akamon Street"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.761355,35.7110582],[139.7613902,35.7109274],[139.7606096,35.7107891],[139.7605747,35.710919],[139.7607027,35.7109417],[139.7608733,35.7109719],[139.7608462,35.7110726],[139.7610232,35.7111039],[139.76105,35.7110042],[139.7612216,35.7110346],[139.761355,35.7110582],[139.761355,35.7110582]]]},"properties":{"id":240756689,"name":"東京大学教育学研究科・教育学部","levels":"","building":"university","tags":{"addr:postcode":"113-0033","building":"university","name":"東京大学教育学研究科・教育学部","name:en":"Graduate School of Education / Faculty of Education","name:ja":"東京大学教育学研究科・教育学部","name:ru":"Токийский университет, Институт педагогики и Педагогический факультет","operator":"東京大学"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7611962,35.7117679],[139.7610367,35.7117397],[139.7610106,35.711837],[139.7609003,35.7118175],[139.7609872,35.7114942],[139.7607726,35.7114562],[139.7606781,35.7114395],[139.7605974,35.7117398],[139.7604932,35.7117213],[139.7605514,35.7115047],[139.7603975,35.7114774],[139.7603528,35.7116439],[139.760319,35.7117696],[139.7603477,35.7117747],[139.7603103,35.7119139],[139.7606923,35.7119816],[139.7610988,35.7120537],[139.7611361,35.7119151],[139.7611557,35.7119185],[139.7611962,35.7117679],[139.7611962,35.7117679]]]},"properties":{"id":240758655,"name":"東京大学総合図書館","levels":"","building":"university","tags":{"addr:postcode":"113-0033","amenity":"library","building":"university","name":"東京大学総合図書館","name:en":"University of Tokyo General Library","name:es":"Biblioteca general de la Universidad de Tokio","name:ja":"東京大学総合図書館","name:ru":"Сводная библиотека Токийского университета","website":"https://www.lib.u-tokyo.ac.jp/ja","wheelchair":"yes","wikidata":"Q17222926","wikipedia":"ja:東京大学総合図書館"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7604283,35.7104927],[139.7603711,35.7104836],[139.7603365,35.7104782],[139.7603071,35.7106009],[139.7602792,35.7107173],[139.7603107,35.7107223],[139.760371,35.7107318],[139.7604012,35.7106057],[139.7604283,35.7104927],[139.7604283,35.7104927]]]},"properties":{"id":240891310,"name":"赤門","levels":"1","building":"yes","tags":{"access":"permissive","addr:city":"文京区","addr:housename":"赤門","addr:province":"東京都","barrier":"gate","bicycle":"yes","building":"yes","building:levels":"1","foot":"yes","historic":"heritage","motor_vehicle":"no","name":"赤門","name:en":"Red Gate","name:fr":"Porte Rouge","name:ja":"赤門","name:ja-Hira":"あかもん","name:ja-Latn":"Akamon","old_name":"Goshuden-mon","roof:shape":"gabled","source":"survey","tourism":"attraction","wheelchair":"yes","wikidata":"Q48807898","wikimedia_commons":"Category:Akamon, University of Tokyo","wikipedia":"ja:御守殿"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7584753,35.7101896],[139.7586257,35.7101774],[139.758617,35.710107],[139.7584666,35.7101193],[139.7584753,35.7101896],[139.7584753,35.7101896]]]},"properties":{"id":241193833,"name":"洋和レジデンス赤門","levels":"","building":"apartments","tags":{"building":"apartments","name":"洋和レジデンス赤門","source":"GSI/KIBAN 25000; NARO","source_ref":"http://wiki.osm.org/wiki/GSI_KIBAN"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7627542,35.7128096],[139.7621507,35.7128368],[139.762015,35.7128419],[139.761755,35.7127943],[139.7613315,35.7127169],[139.7611756,35.7126884],[139.7611535,35.7126843],[139.7610824,35.7126713],[139.7627542,35.7128096]]]},"properties":{"id":368511316,"name":"三四郎坂","levels":"","building":"","tags":{"highway":"service","incline":"up","name":"三四郎坂","source":"Bing"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7617197,35.7105189],[139.7615689,35.7110806],[139.7615999,35.7111183],[139.761833,35.711164],[139.7618861,35.7111397],[139.7619661,35.7105393],[139.7619368,35.7105092],[139.7617504,35.7105004],[139.7617197,35.7105189],[139.7617197,35.7105189]]]},"properties":{"id":458080515,"name":"医学部前広場","levels":"","building":"","tags":{"landcover":"grass","leisure":"park","name":"医学部前広場"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7596664,35.7138831],[139.7597636,35.7135321],[139.7607098,35.7137048],[139.7606126,35.7140558],[139.7596664,35.7138831],[139.7596664,35.7138831]]]},"properties":{"id":458683678,"name":"工学部前広場","levels":"","building":"","tags":{"leisure":"park","name":"工学部前広場"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7630319,35.7132401],[139.7630307,35.7133955],[139.7630307,35.713401],[139.7633471,35.7134024],[139.7633477,35.7132413],[139.7630319,35.7132401],[139.7630319,35.7132401]]]},"properties":{"id":458704426,"name":"理学部4号館","levels":"7","building":"university","tags":{"building":"university","building:levels":"7","name":"理学部4号館","name:en":"Faculty of Science Building 4"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7633471,35.7134024],[139.7633477,35.7132413],[139.7637129,35.7132421],[139.7637124,35.7134032],[139.7633471,35.7134024],[139.7633471,35.7134024]]]},"properties":{"id":458704428,"name":"理学部7号館","levels":"7","building":"university","tags":{"building":"university","building:levels":"7","name":"理学部7号館","name:en":"Faculty of Science Building 7"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7658987,35.7118634],[139.7667679,35.7118415],[139.7667571,35.7115591],[139.766106,35.7115755],[139.7661028,35.7114903],[139.7658847,35.7114958],[139.7658987,35.7118634],[139.7658987,35.7118634]]]},"properties":{"id":463106590,"name":"東京大学医学部附属病院新入院棟B","levels":"15","building":"university","tags":{"addr:block_number":"3","addr:city":"文京区","addr:housenumber":"1","addr:neighbourhood":"7","addr:province":"東京都","addr:quarter":"本郷","building":"university","building:levels":"15","height":"75.5","name":"東京大学医学部附属病院新入院棟B","name:en":"Inpatients' Building B","name:ja":"東京大学医学部附属病院新入院棟B","start_date":"2018-01-05"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7629523,35.7123927],[139.7629584,35.712613],[139.7628264,35.712615],[139.7628281,35.7127579],[139.762882,35.7127574],[139.7637055,35.7127392],[139.7637478,35.7127385],[139.7638108,35.7127372],[139.7639223,35.7126411],[139.7639213,35.7125557],[139.7638885,35.7125489],[139.7638473,35.7114624],[139.7630123,35.7114833],[139.763048,35.7124222],[139.762997,35.7124235],[139.76299,35.712392],[139.7629523,35.7123927],[139.7629523,35.7123927]]]},"properties":{"id":464899109,"name":"御殿下記念館","levels":"","building":"","tags":{"leisure":"sports_centre","name":"御殿下記念館","name:en":"Gotenshita Memorial Arena","name:es":"Arena conmemorativa Gotenshita","name:ja":"御殿下記念館","name:ru":"Мемориальный стадион Готэнсита","sport":"badminton;basketball;climbing;soccer;swimming;table_tennis;yoga;fitness","wheelchair":"limited"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7604477,35.7098424],[139.7607293,35.709892],[139.7607663,35.7097534],[139.7604847,35.7097039],[139.7604477,35.7098424],[139.7604477,35.7098424]]]},"properties":{"id":468349901,"name":"経済学研究科 学術交流棟","levels":"5","building":"university","tags":{"alt_name":"小島ホール","alt_name:en":"Kojima Hall","building":"university","building:levels":"5","name":"経済学研究科 学術交流棟","name:en":"Economics Research Annex","name:ja":"経済学研究科 学術交流棟","roof:levels":"1","roof:shape":"flat"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.759679,35.7128654],[139.7596604,35.7129409],[139.7596416,35.7130169],[139.759679,35.7128654]]]},"properties":{"id":468358845,"name":"正門","levels":"","building":"","tags":{"barrier":"gate","bicycle":"yes","foot":"yes","name":"正門","name:en":"Main Gate"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7634798,35.7140565],[139.7636855,35.714095],[139.763697,35.7140544],[139.7637453,35.7140634],[139.7638637,35.7136461],[139.7638162,35.7136372],[139.7638274,35.7135978],[139.7636203,35.7135591],[139.7636039,35.7136171],[139.763554,35.7136078],[139.7634968,35.7135971],[139.7634894,35.7136231],[139.7635426,35.7136331],[139.7635958,35.713643],[139.7635014,35.7139759],[139.7634501,35.7139663],[139.763395,35.713956],[139.7633874,35.713983],[139.7634412,35.7139931],[139.7634949,35.7140031],[139.7634798,35.7140565],[139.7634798,35.7140565]]]},"properties":{"id":526170672,"name":"理学部1号館 東棟","levels":"6","building":"university","tags":{"building":"university","building:levels":"6","name":"理学部1号館 東棟","name:en":"Faculty of Science Building 1 East Wing","name:ja":"理学部1号館 東棟","source":"survey"}}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[139.7609415,35.7131791],[139.7615352,35.7132895],[139.7615508,35.7132924],[139.7616084,35.7133031],[139.76167,35.7133145],[139.7609415,35.7131791]]]},"properties":{"id":643102413,"name":"銀杏並木","levels":"","building":"","tags":{"architect":"本多静六","architect:wikidata":"Q11520098","bicycle":"yes","highway":"pedestrian","incline":"down","lit":"yes","name":"銀杏並木","name:fr":"Allée de ginkgos","source":"Bing 2010","start_date":"1906","surface":"paving_stones","wikipedia":"ja:本多静六"}}}]}</script>
+<script>
+const PACK = JSON.parse(document.getElementById('pack').textContent);
+const GEO  = JSON.parse(document.getElementById('geo').textContent);
+const SC = PACK.scenario, G = SC.geometry;
+const ZONES = PACK.zones || [{id:'本乡',name:'本乡构内',lat:35.7129,lng:139.7618,zoom:17}];
+const T0 = 390, T1 = 3240, STEP = 30;   // 绝对分钟（自 1969-01-18 00:00）
+const COL = {'机动队':'#4f8fd0','全共斗':'#c0563b','反帝学评':'#d98b4a','社学同':'#a8624f',
+             '中核派':'#b0442f','社学同 ML派':'#c9803f','革马派':'#8e6bb5','民青':'#c9a227','明大共斗':'#8f6b3f'};
+const REBEL = new Set(['全共斗','反帝学评','社学同','中核派','社学同 ML派','革马派','明大共斗']);
+const sideOf = s => s==='机动队' ? 'police' : (s==='民青' ? 'mingqing' : 'rebel');
+const fmt = m => { const d = new Date(1969,0,18,0,0,0); d.setMinutes(d.getMinutes()+m);
+  const p = n => String(n).padStart(2,'0');
+  return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); };
+
+function dist(a, b){                       // km（球面近似）
+  const R = 6371, ra = Math.PI/180;
+  const dLat = (b.lat-a.lat)*ra, dLng = (b.lng-a.lng)*ra;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*ra)*Math.cos(b.lat*ra)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+// ---------- 状态 ----------
+let S = null, selUnit = null, selFloor = null, mode = 'script', playerSide = '全共斗', playing = false, timer = null, curZone = '本乡';
+
+function fresh(){
+  const builds = JSON.parse(JSON.stringify(PACK.buildings));
+  S = { t:T0, turn:0, mode:mode, playerSide:playerSide,
+        sites: builds, floors: JSON.parse(JSON.stringify(PACK.floors0)),
+        capBySide:{}, arrests:0, captured:0,
+        units: PACK.forces.map((f,i)=>({...f, idx:i, cur:{lat:f.lat,lng:f.lng},
+            n0:f.n, n:f.n, losses:0, morale:70, supply:100, order:null, target:null,
+            alive:(f.n===null||f.n>0), zone:f.zone||'本乡'})),
+        log:[], flags:[], flips:[], done:new Set(), auto:false,
+        orders:0, digest:[], reports:[], autoAI:false };
+  S.units.forEach(u=>{ if(u.side==='机动队') S.capBySide[u.idx]='police'; });
+  log('sys','推演开始：1969-01-18 06:30。剧本模式按史料推进；切「自由推演」后由你指挥「'+playerSide+'」。');
+}
+function log(cls, txt){
+  S.log.push({cls, t:S.t, txt});
+  if(S.log.length>500) S.log.shift();
+  const box = $('log'); if(box){ const d=document.createElement('div'); d.className='ev '+cls;
+    d.innerHTML = '<span class="tm">'+fmt(S.t)+'</span><span>'+txt+'</span>'; box.appendChild(d); box.scrollTop=1e9; }
+}
+function toast(t){ const el=$('toast'); el.textContent=t; el.style.display='block'; clearTimeout(el._h); el._h=setTimeout(()=>el.style.display='none',1600); }
+const $ = id => document.getElementById(id);
+
+// ---------- 地图 ----------
+const map = L.map('map',{zoomControl:true,zoomSnap:.5,maxZoom:18,minZoom:13}).setView([35.7129,139.7618],17);
+const gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{maxZoom:19,attribution:'国土地理院'}).addTo(map);
+const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+L.control.layers({'卫星（地理院）':gsi,'OSM':osm},null,{position:'topleft'}).addTo(map);
+if(GEO && GEO.features) L.geoJSON(GEO,{style:()=>({color:'#3a4a5c',weight:1,fillColor:'#2a3646',fillOpacity:.16})}).addTo(map);
+const bLayer = L.layerGroup().addTo(map), uLayer = L.layerGroup().addTo(map);
+map.on('zoomend moveend', ()=>{ if(S) draw(); });   // 缩放后重算标签偏移（标签按像素避让）
+
+function shortName(n){ return n.replace(/（.*?）/g,'').replace(/机动队/,'机').slice(0,9); }
+const HALL = {lat:35.713428, lng:139.762297};
+function holderColor(h){ return COL[h]|| (h==='机动队'?'#4f8fd0':'#8894a4'); }
+function holderLabel(k){ const x = S.floors[k]; return (x && x.mix) ? x.holder+'＋'+x.mix : (x ? x.holder : ''); }
+function mpp(lat,z){ return 156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); }
+function hallBrief(){
+  const held = ['1','2','3','4','5','6'].filter(k=>S.floors[k].holder!=='机动队');
+  if(!held.length) return '已全面制压';
+  const f = held[0], n = S.floors[f].n;
+  return '守 '+held.join('/')+'F｜'+f+'F '+(n===null?'人数未详':n+' 人');
+}
+
+// 标签避让：按屏幕像素判重（含据点圆与编组点），重叠就跳过
+function labelFree(placed, x, y, w, h){
+  return placed.every(p=> !(x < p.x + p.w + 3 && x + w + 3 > p.x && y < p.y + p.h + 2 && y + h + 2 > p.y));
+}
+function draw(){
+  bLayer.clearLayers(); uLayer.clearLayers();
+  const z = map.getZoom(), placed = [];
+  const px = (lat,lng)=>map.latLngToContainerPoint([lat,lng]);
+  const occ = (lat,lng,rpx)=>{ const p = px(lat,lng); placed.push({x:p.x-rpx,y:p.y-rpx,w:2*rpx,h:2*rpx}); };
+  // 据点（圆＋tooltip）
+  S.sites.forEach(b=>{
+    const c = holderColor(b.holder);
+    const r = b.id==='yasuda_hall' ? 80 : 36;
+    const tip = b.name+'｜'+b.holder+(b.floors?'｜逐层见右栏':(b.str===null?'｜兵 未详':'｜兵 '+b.str+' 人')+'｜街垒 '+Math.max(0,Math.round(b.barrier)));
+    L.circle([b.lat,b.lng],{radius:r,color:c,weight:b.id==='yasuda_hall'?2:1.4,
+      fillColor:c,fillOpacity:b.id==='yasuda_hall'?.16:.11}).bindTooltip(tip,{sticky:true}).addTo(bLayer);
+    occ(b.lat,b.lng, r/mpp(b.lat,z)+2);
+    if(S.t>=800 && sideOf(b.holder)!=='police' && b.zone==='本乡')
+      L.polyline([[35.71294,139.75966],[b.lat,b.lng]],{color:'#4f8fd0',weight:.8,dashArray:'4 6',opacity:.3}).addTo(bLayer);
+  });
+  // 编组点
+  S.units.filter(u=>u.alive).forEach(u=>{
+    const c = COL[u.sect]||COL[u.side]||'#888';
+    L.circleMarker([u.cur.lat,u.cur.lng],{radius:7,color:'#0d1117',weight:1.4,fillColor:c,fillOpacity:.95})
+      .bindTooltip(u.unit+'｜'+u.side+(u.sect&&u.sect!==u.side?'（'+u.sect+'）':'')+'｜'+(u.n===null?'人数未详':u.n+(u.nunit||'人'))
+        +'｜士气 '+Math.round(u.morale)+'｜补给 '+Math.round(u.supply),{sticky:true}).addTo(uLayer);
+    occ(u.cur.lat,u.cur.lng,9);
+  });
+  if(z < 16) return;
+  // 标签：第一行「地点／番号」，第二行「组织＋兵力」。
+  // 每个标签依次试「上方／更上方／下方」三个位置，都不行才放弃（信息退回 tooltip）；
+  // 位置被挤到 60px 以外时画一条细引线，避免「标签飘着不知道是谁的」。
+  const mk = (lat,lng,l1,l2,col,cyCands)=>{
+    const p = px(lat,lng);
+    const w = Math.max(l1.length*12.2, l2.length*8.4) + 12, h = 30;
+    for(const cy0 of cyCands){
+      const cy = p.y + cy0;
+      const x = p.x - w/2, y = cy - h/2;
+      if(!labelFree(placed,x,y,w,h)) continue;
+      placed.push({x,y,w,h});
+      if(Math.abs(cy0) > 60){
+        const edge = map.containerPointToLatLng([p.x, cy + (cy0<0 ? h/2 : -h/2)]);
+        L.polyline([[lat,lng],[edge.lat,edge.lng]],{color:col,weight:.8,opacity:.55,dashArray:'2 3'}).addTo(bLayer);
+      }
+      const html = '<div style="font:11px/1.25 Microsoft YaHei;white-space:nowrap;background:rgba(13,17,23,.82);'
+        + 'border:1px solid rgba(120,140,160,.40);padding:1px 4px;border-radius:3px">'
+        + '<div style="color:'+col+';font-weight:600">'+l1+'</div>'
+        + '<div style="color:#a9bacd;font-size:10px">'+l2+'</div></div>';
+      L.marker([lat,lng],{icon:L.divIcon({className:'',html:html,iconSize:[w,h],iconAnchor:[w/2, h/2 - cy0]}),interactive:false}).addTo(bLayer);
+      return true;
+    }
+    return false;
+  };
+  const above = (rpx)=>[-(rpx+8+15), -(rpx+8+15+32), -(rpx+8+15+64), (rpx+8+15), (rpx+8+15+32)];
+  const hall = S.sites.find(b=>b.id==='yasuda_hall');
+  if(hall){
+    const rpx = 80/mpp(hall.lat,z);
+    mk(hall.lat,hall.lng,hall.name,hallBrief(),holderColor(hall.holder),above(rpx));
+  }
+  S.sites.filter(b=>b.id!=='yasuda_hall' && b.zone===curZone)
+    .sort((a,b)=>(b.str||0)-(a.str||0))
+    .forEach(b=>mk(b.lat,b.lng,b.name, b.holder+(b.str===null?'｜未详':'｜'+b.str+' 人'),
+      holderColor(b.holder), above(36/mpp(b.lat,z))));
+  if(z >= 17){
+    S.units.filter(u=>u.alive && u.zone===curZone).sort((a,b)=>(b.n||0)-(a.n||0)).forEach(u=>{
+      const t2 = (u.sect||u.side)+(u.n===null?'｜未详':'｜'+u.n+(u.nunit||'人'));
+      mk(u.cur.lat,u.cur.lng,shortName(u.unit),t2,(COL[u.sect]||COL[u.side]||'#888'),[-14,-40,22,48]);
+    });
+  }
+}
+
+// ---------- 能力（对齐上游 capabilities）----------
+// 直升机是「空中支援平台」：能侦察、能撒催泪液，但没有步兵去占楼、抓人，所以不给 assault。
+function caps(u){
+  if(u.side==='机动队'){
+    if(u.unit.includes('直升机')) return ['recon','fire','rest'];
+    if(u.unit.includes('私服')) return ['recon','rest'];
+    return ['assault','fire','rest','encircle','floor','move'];
+  }
+  if(u.side==='民青') return ['defend','counter'];
+  return ['defend','repair','attack','move','counter','retreat','rest'];
+}
+function powerOf(u){
+  let base = u.side==='机动队' ? 26 : (u.side==='民青' ? 11 : 15);
+  if(u.unit.includes('装甲')||u.unit.includes('放水')) base = 34;
+  if(u.unit.includes('直升机')) base = 14;                       // 空中支援：只压街垒
+  const m = .55 + u.morale/180, sp = u.supply<20 ? .55 : 1;
+  const n = (u.n===null?300:u.n);
+  const size = Math.max(.7, Math.min(2.2, Math.sqrt(n/500)));   // 合并后人多，威力按 √n 放大
+  return base*m*sp*size/(G.terrain_factor||1);
+}
+
+// ---------- 回合 ----------
+function step(){
+  if(S.t+STEP>T1){ toast('已到收束时刻（1/20 06:00）'); return; }
+  const before = S.log.length;
+  S.t += STEP; S.turn++;
+  if(mode==='script') applyHist();
+  aiMingqing();
+  if(mode==='free' && playerSide!=='机动队') aiPolice();   // 玩家自己指挥机动队时，AI 不再代令
+  execOrders();
+  upkeep();
+  integrity();
+  pushDigest(before);
+  render();
+  if(S.autoAI && (S.turn % 2 === 0)) callAI();
+}
+function applyHist(){
+  HIST.forEach(h=>{
+    const [tm, kind, arg, opt] = h;
+    if(S.t < tm || S.done.has(h)) return;
+    S.done.add(h);
+    if(kind==='flip') flipSite(arg, '历史', opt);
+    else if(kind==='floor') flipFloor(arg);
+    else if(kind==='log') log('sys', arg);
+  });
+}
+function flipFloor(f){
+  const x = S.floors[f];
+  if(!x) return;
+  x.holder='机动队'; S.arrests += (x.n||0); x.n=0;
+  log('sys','【史】讲堂 '+f+'F 被机动队制压。');
+  S.flips.push({t:S.t, txt:'安田讲堂 '+f+'F → 机动队'});
+  if([1,2,3,4,5,6].every(k=>S.floors[k].holder==='机动队')){
+    const hall = S.sites.find(b=>b.id==='yasuda_hall');
+    if(hall && hall.holder!=='机动队'){ hall.holder='机动队'; log('warn','【史】安田讲堂全面制压（6F 钟楼失守）。'); S.flips.push({t:S.t,txt:'安田讲堂 → 全面制压'}); }
+  }
+}
+function flipSite(id, src, verb){
+  const b = S.sites.find(x=>x.id===id); if(!b) return;
+  const prev = b.holder, n = b.str||0;
+  const tag = src==='历史' ? '【史】' : '【推演】';
+  const noArrest = !!verb && verb.indexOf('无人')>=0;
+  b.holder = '机动队'; b.str = 0;
+  if(noArrest){
+    log(src==='历史'?'sys':'warn', tag+b.name+'：'+verb+'（原 '+prev+'，无人被捕）。');
+  } else {
+    S.captured += 1; S.arrests += n;
+    log(src==='历史'?'sys':'warn', tag+b.name+' 被机动队制压（'+(n?n+' 人被捕':'馆内无人')+'）。');
+  }
+  S.flips.push({t:S.t, txt:b.name+'：'+prev+' → 机动队'+(verb?'（'+verb+'）':'')});
+}
+
+function aiMingqing(){
+  S.sites.filter(b=>b.holder==='民青').forEach(b=>{ b.barrier = Math.min(100, b.barrier+4); });
+  S.units.filter(u=>u.alive && u.side==='民青').forEach(u=>{
+    const tgt = S.units.filter(x=>x.alive && REBEL.has(x.side) && dist(x.cur,u.cur)<=0.06);
+    if(tgt.length){ const v=tgt[0]; v.n = Math.max(0,(v.n||0)-4); v.morale=Math.max(10,v.morale-5);
+      log('warn','民青 '+u.unit+' 反击：'+v.unit+' −4 人（士气 −5）。');
+      if(v.n===0){ v.alive=false; log('warn',v.unit+' 溃散。'); } }
+  });
+}
+function aiPolice(){
+  if(S.t < 780) return;
+  S.units.filter(u=>u.alive && u.side==='机动队' && !u.order).forEach(u=>{
+    // 警方只攻全共斗系据点；民青据点在史实里受警方保护，不在攻击清单内
+    const tgt = S.sites.filter(b=>REBEL.has(b.holder) && b.zone===u.zone)
+      .sort((a,b)=>dist(u.cur,a)-dist(u.cur,b))[0];
+    if(tgt){ u.order = {kind:'assault', id:tgt.id}; }
+  });
+}
+
+function execOrders(){
+  S.units.filter(u=>u.alive && u.order).forEach(u=>{
+    const o = u.order;
+    if(!caps(u).includes(o.kind)){ log('warn','回执：'+u.unit+' 不具备「'+o.kind+'」能力，命令退回。'); u.order=null; return; }
+    if(o.kind==='assault'||o.kind==='fire'||o.kind==='attack'){ engage(u, o.id, o.kind==='fire'?.62:1); u.supply=Math.max(0,u.supply-6); }
+    else if(o.kind==='recon'){ recon(u); u.order=null; u.supply=Math.max(0,u.supply-2); }
+    else if(o.kind==='floor'){ floorEngage(u, o.f); u.supply=Math.max(0,u.supply-6); }
+    else if(o.kind==='encircle'){ encircle(u); u.supply=Math.max(0,u.supply-3); }
+    else if(o.kind==='repair'||o.kind==='defend'){ hold(u, o.kind); u.supply=Math.max(0,u.supply-2); }
+    else if(o.kind==='counter'){ counter(u); u.supply=Math.max(0,u.supply-4); }
+    else if(o.kind==='move'){ moveTo(u,o.id); u.supply=Math.max(0,u.supply-3); }
+    else if(o.kind==='retreat'){ retreat(u); }
+    else if(o.kind==='rest'){ u.morale=Math.min(100,u.morale+6); u.supply=Math.min(100,u.supply+8); }
+  });
+}
+function hold(u, kind){
+  const b = S.sites.find(x=>sideOf(x.holder)===sideOf(u.side) && dist(u.cur,x)<=0.08);
+  if(!b) { log('warn','回执：'+shortName(u.unit)+' 附近无本方据点，无法加固。'); return; }
+  if(kind==='repair' && b.sealedUntil>=S.turn){ log('warn','回执：'+b.name+' 正被包围，补给断了，无法修补街垒。'); return; }
+  const add = kind==='repair' ? 9 : 5;
+  if(b.floors){
+    const f = lowestFloor('rebel');
+    if(f){ S.floors[f].b = Math.min(100, S.floors[f].b+add); log('rec','回执：讲堂 '+f+'F 街垒 +'+add+'（'+Math.round(S.floors[f].b)+'）。'); }
+  } else { b.barrier = Math.min(100, b.barrier+add); log('rec','回执：'+b.name+' 街垒 +'+add+'（'+Math.round(b.barrier)+'）。'); }
+}
+function recon(u){
+  const foes = S.units.filter(x=>x.alive && sideOf(x.side)!==sideOf(u.side))
+    .map(x=>({x:x, d:dist(u.cur,x.cur)})).sort((a,b)=>a.d-b.d)[0];
+  const site = S.sites.filter(b=>REBEL.has(b.holder) && b.zone===u.zone)
+    .map(b=>({b:b, d:dist(u.cur,b)})).sort((a,b)=>a.d-b.d)[0];
+  log('rec','侦察：'+shortName(u.unit)+' 报告 '
+    +(foes?('最近敌编组 '+shortName(foes.x.unit)+'（'+Math.round(foes.d*1000)+' m）'):'附近无敌编组')
+    +'；'+(site?('本方尚未控制的据点 '+site.b.name+'（'+Math.round(site.d*1000)+' m）'):'本战区据点均已在手')+'。');
+  u.morale = Math.min(100, u.morale+2);
+}
+function sealedNear(u){
+  return S.sites.some(b=>b.sealedUntil>=S.turn && dist(u.cur,b)<=0.12);
+}
+function encircle(u){
+  const tgt = S.sites.filter(b=>sideOf(b.holder)!==sideOf(u.side) && dist(u.cur,b)<=0.25)
+    .sort((a,b)=>dist(u.cur,a)-dist(u.cur,b))[0];
+  if(!tgt){ log('warn','回执：'+shortName(u.unit)+' 250 m 内没有可包围的敌方据点。'); return; }
+  tgt.sealedUntil = S.turn + 2;
+  log('rec','包围：'+shortName(u.unit)+' 封住 '+tgt.name+' 的补给线（2 回合内守方不能修补街垒，反击威力减半）。');
+}
+function counter(u){
+  const foes = S.units.filter(x=>x.alive && sideOf(x.side)!==sideOf(u.side) && dist(u.cur,x.cur)<=0.09);
+  if(!foes.length){ log('warn','回执：'+shortName(u.unit)+' 周围 90 m 内无敌方，反击落空。'); return; }
+  foes.slice(0,2).forEach(f=>{
+    const dmg = Math.max(1, Math.round((u.side==='民青'?4:7) * (sealedNear(u)?0.5:1)));
+    if(f.n!==null) f.n = Math.max(0, f.n-dmg);
+    f.morale = Math.max(10, f.morale-8);
+    u.morale = Math.min(100, u.morale+2);
+    log('warn', u.side+' '+shortName(u.unit)+' 反击 '+shortName(f.unit)+'：−'+dmg+' 人。');
+    if(f.n===0){ f.alive=false; log('warn',f.unit+' 溃散。'); }
+  });
+}
+function retreat(u){
+  const home = ZONES.find(z=>z.name.includes(u.zone))||ZONES[0];
+  u.cur = {lat:home.lat, lng:home.lng};
+  u.morale = Math.max(20, u.morale-10);
+  u.order = null; u.target = null;                 // 撤一次就结束，不能每回合重复掉士气
+  log('warn', shortName(u.unit)+' 脱离接触，退往 '+u.zone+'（命令结束）。');
+}
+function moveTo(u, id){
+  const b = S.sites.find(x=>x.id===id); if(!b) return;
+  const d = dist(u.cur, b);
+  const spd = u.side==='机动队' ? .55 : .45;      // km / 30min
+  if(d<=spd){ u.cur={lat:b.lat,lng:b.lng}; u.zone=b.zone; log('rec','回执：'+shortName(u.unit)+' 已到达 '+b.name+'。'); u.order=null; }
+  else { const r=spd/d; u.cur={lat:u.cur.lat+(b.lat-u.cur.lat)*r, lng:u.cur.lng+(b.lng-u.cur.lng)*r}; }
+}
+function engage(u, siteId, mult){
+  const b = S.sites.find(x=>x.id===siteId); if(!b) return;
+  const d = dist(u.cur,b);
+  const reach = (G.contact_km||.05)+0.10;
+  if(d > reach){                                  // 未接触：本回合只机动，命令保留
+    if(!u.target || u.target!==siteId){ u.target=siteId; log('rec','回执：'+shortName(u.unit)+' 向 '+b.name+' 机动（距离 '+Math.round(d*1000)+' m）。'); }
+    const spd = u.side==='机动队' ? .55 : .45;     // km / 30min
+    const r = Math.min(1, spd/d);
+    u.cur = {lat:u.cur.lat+(b.lat-u.cur.lat)*r, lng:u.cur.lng+(b.lng-u.cur.lng)*r};
+    return;
+  }
+  const pw = powerOf(u)*mult;
+  if(b.id==='yasuda_hall'){ attackHall(u,pw); return; }
+  if(sideOf(b.holder)===sideOf(u.side)){ log('warn','回执：'+b.name+' 已在本方控制下。'); u.order=null; return; }
+  b.barrier -= pw;
+  if(b.barrier<=0){
+    if(u.nunit==='架'){                      // 空中平台只能压制：没有地面分队进去占楼、抓人
+      b.barrier = 8;
+      log('rec','空中支援把 '+b.name+' 街垒压到 8，但直升机不能占领——须地面部队进入。');
+      u.order=null; u.target=null; return;
+    }
+    const prev=b.holder;
+    b.holder = u.side; b.barrier = 25;
+    S.arrests += Math.round((b.str||0)*0.5); b.str = Math.round((b.str||0)*0.5);
+    log('warn', u.side+' 制压 '+b.name+'（原 '+prev+'）。');
+    S.flips.push({t:S.t, txt:b.name+'：'+prev+' → '+u.side});
+    u.order=null; u.target=null;
+  } else {
+    log('rec','攻 '+b.name+'：街垒 '+Math.round(b.barrier)+'（剩）。');
+  }
+}
+function floorEngage(u, f){
+  const d = dist(u.cur, HALL), reach = (G.contact_km||.05)+0.13;
+  if(d > reach){
+    const spd = .55, r = Math.min(1, spd/d);
+    u.cur = {lat:u.cur.lat+(HALL.lat-u.cur.lat)*r, lng:u.cur.lng+(HALL.lng-u.cur.lng)*r};
+    log('rec','回执：'+u.unit+' 向讲堂机动（距 '+Math.round(d*1000)+' m），准备突击 '+f+'F。');
+    return;
+  }
+  const x = S.floors[f];
+  if(x.holder==='机动队'){ log('rec','回执：'+f+'F 已在机动队手上，改推下一层。'); u.order={kind:'assault',id:'yasuda_hall'}; return; }
+  const lower = [1,2,3,4,5].filter(k=>+k<+f).some(k=>S.floors[k].holder!=='机动队');
+  const eff = lower ? 0.55 : 1.0;                       // 下层未清：正面受阻，只能部分施压
+  const pw = powerOf(u)*eff;
+  if(lower) log('warn','定向突击 '+f+'F 受阻（下层仍在守方），'+u.unit+' 只能逐层推进。');
+  x.b -= pw;
+  if(x.b<=0){
+    const prev = x.holder;
+    x.holder = u.side; S.arrests += (x.n||0); x.n=0; x.b=0; x.vacant=false;   // 易手后旧街垒清零，不留负数
+    log('warn', u.side+' 清 '+f+'F（原 '+prev+'）。');
+    S.flips.push({t:S.t, txt:'安田讲堂 '+f+'F：'+prev+' → '+u.side});
+    if([1,2,3,4,5,6].every(k=>S.floors[k].holder==='机动队')){
+      const hall=S.sites.find(b=>b.id==='yasuda_hall'); hall.holder='机动队';
+      log('warn','安田讲堂全面制压（6F 钟楼失守）。'); S.flips.push({t:S.t,txt:'安田讲堂 → 全面制压'});
+    }
+    u.order = {kind:'assault', id:'yasuda_hall'};
+  } else log('rec','定向攻 '+f+'F：街垒 '+Math.round(x.b)+'（剩）。');
+}
+function attackHall(u, pw){
+  if(u.nunit==='架'){                       // 空中平台：只能压街垒，不能占楼层
+    const f0 = lowestFloor('rebel');
+    if(!f0){ u.order = null; return; }
+    const x0 = S.floors[f0];
+    if(x0.b <= 8){ log('rec','直升机：'+f0+'F 街垒已压到 8，空中火力不再有效。'); u.order = null; return; }
+    x0.b = Math.max(8, x0.b - pw);
+    log('rec','直升机对讲堂 '+f0+'F 施压（街垒 '+Math.round(x0.b)+'），空中平台不能占领楼层。');
+    return;
+  }
+  const f = lowestFloor(u.side==='机动队'?'rebel':'police');
+  if(!f){ const hall=S.sites.find(b=>b.id==='yasuda_hall'); if(hall.holder!=='机动队'){hall.holder='机动队'; log('warn','安田讲堂全面制压。');} u.order=null; return; }
+  const x = S.floors[f];
+  x.b -= (sideOf(x.holder)==='rebel'? pw : pw);
+  if(x.b<=0){
+    const prev = x.holder;
+    x.holder = u.side; S.arrests += (x.n||0); x.n=0; x.b=0;   // 易手后街垒清零
+    log('warn', u.side+' 清 '+f+'F（原 '+prev+'）。');
+    S.flips.push({t:S.t, txt:'安田讲堂 '+f+'F：'+prev+' → '+u.side});
+    if([1,2,3,4,5,6].every(k=>S.floors[k].holder==='机动队')){
+      const hall=S.sites.find(b=>b.id==='yasuda_hall'); hall.holder='机动队';
+      log('warn','安田讲堂全面制压（6F 钟楼失守）。'); S.flips.push({t:S.t,txt:'安田讲堂 → 全面制压'});
+    }
+  } else log('rec','攻讲堂 '+f+'F：街垒 '+Math.round(x.b)+'（剩）。');
+}
+function lowestFloor(who){
+  for(const k of ['1','2','3','4','5','6']){
+    const h = S.floors[k].holder;
+    if(who==='rebel' ? h!=='机动队' : !REBEL.has(h)) return k;
+  }
+  return null;
+}
+function upkeep(){
+  S.units.filter(u=>u.alive).forEach(u=>{
+    if(u.side==='机动队'||u.side==='全共斗') u.supply = Math.min(100,u.supply+2);
+    if(u.morale<40 && u.n!==null && u.n>0 && Math.random()<.12){ u.n=Math.max(0,u.n-2); u.losses+=2; log('warn',shortName(u.unit)+' 士气低落，逃亡 2 人。'); }
+    if(u.n!==null && u.n<=0){ u.alive=false; log('warn',u.unit+' 溃散。'); }
+  });
+}
+function integrity(){
+  S.units.forEach(u=>{
+    if(u.n===null) return;
+    if(u.n > u.n0){ S.flags.push({t:S.t, txt:u.unit+' 人数从 '+u.n0+' 增到 '+u.n+'（无援军记录）'}); u.n=u.n0; }
+  });
+  if(S.t !== T0 + S.turn*STEP) S.flags.push({t:S.t, txt:'时钟不一致：turn='+S.turn});
+}
+
+// ---------- 历史基线 ----------
+const HIST = [
+  [420,'flip','kogakubu1','解除封锁（馆内无人）'],
+  [430,'flip','rigaku1','解除封锁（馆内无人）'],
+  [440,'flip','igaku_c'],
+  [540,'flip','kyoiku','验证（无人被捕）'],       // 08:15 应待→09:15 令状→100 人一巡→11:20 验证終了
+  [540,'flip','houbun2'],      // 09:00 前后 革马 14 人屋顶全员被捕
+  [660,'flip','reppinkan'],
+  [700,'log','【史】11:40 法学部研究室 3 层突入；屋顶浇汽油，15:35 屋顶 121 人被逮捕。'],
+  [780,'log','【史】13:20 讲堂本格攻击开始；装甲车被燃烧瓶点燃。'],
+  [1055,'flip','houbou_ken'],  // 15:35 法研屋顶 121 人
+  [1860,'floor',1],
+  [2000,'log','【史】09:20 各阶阶段街垒加固；部队以绳索电钻切断机拆垒。'],
+  [2160,'floor',2],
+  [2215,'floor',3],
+  [2355,'floor',4],
+  [2430,'floor',5],
+  [2487,'floor',6]
+];
+
+// ---------- 渲染 ----------
+// ===== 逐层控制 =====
+function floorOpsButtons(){
+  if(mode!=='free' || !selFloor) return '';
+  const f = selFloor, x = S.floors[f];
+  if(playerSide==='全共斗'){
+    if(!REBEL.has(x.holder)) return '<span class="meta">'+f+'F 已在對方手上，无可下令的守备队。</span>';
+    return '<button class="bt" onclick="floorDefend(\''+f+'\')">加固 '+f+'F（+9 街垒）</button>'+
+           '<button class="bt" onclick="floorCounter(\''+f+'\')">'+f+'F 反击（近战）</button>'+
+           '<button class="bt" onclick="floorReinforce(\''+f+'\')">增援 '+f+'F（调 10 人）</button>'+
+           '<button class="bt" onclick="floorEvac(\''+f+'\')">撤离 '+f+'F（退上一层）</button>'+
+           (x.holder!=='全共斗'?'<button class="bt" onclick="floorMergeOrgs(\''+f+'\')">合并本层各派 → 全共斗</button>':'')+
+           (+f<6 && REBEL.has(S.floors[String(+f+1)].holder)?'<button class="bt" onclick="floorMergeUp(\''+f+'\')">把 '+(+f+1)+'F 并入 '+f+'F</button>':'');
+  }
+  const lowerCleared = [1,2,3,4,5].filter(k=>+k<+f).every(k=>S.floors[k].holder==='机动队');
+  return '<button class="bt" onclick="floorAssault(\''+f+'\')">定向突击 '+f+'F'+(lowerCleared?'':'（下层未清，受阻）')+'</button>'+
+         '<button class="bt" onclick="floorSuppress(\''+f+'\')">压制 '+f+'F（街垒 −12，不占地）</button>';
+}
+function needPoliceNear(){
+  const p = S.units.filter(u=>u.alive && u.side==='机动队').sort((a,b)=>dist(a.cur,HALL)-dist(b.cur,HALL))[0];
+  if(!p){ log('warn','没有可用的机动队编组。'); return null; }
+  if(dist(p.cur,HALL) > 0.12){ log('warn','机动队尚未接近讲堂（'+p.unit+' 距 '+Math.round(dist(p.cur,HALL)*1000)+' m），先突击。'); return null; }
+  return p;
+}
+function floorDefend(f){
+  const x=S.floors[f]; x.b=Math.min(120,x.b+9);
+  log('act','【令】'+f+'F 加固街垒 +9（现 '+Math.round(x.b)+'）。'); S.orders++;
+  render();
+}
+function floorCounter(f){
+  const p = needPoliceNear(); if(!p) return;
+  const dmg = 5 + Math.round(S.floors[f].b/20);
+  p.n = Math.max(0,(p.n||0)-dmg); p.morale = Math.max(10,p.morale-7);
+  log('act','【令】'+f+'F 守备队出击：'+p.unit+' −'+dmg+' 人、士气 −7。');
+  if(p.n===0){ p.alive=false; log('warn',p.unit+' 溃散。'); }
+  S.orders++; render(); draw();
+}
+function floorEvac(f){
+  const x=S.floors[f], nx=S.floors[String(+f+1)];
+  if(!nx){ log('warn',f+'F 之上已无楼层（6F 为钟楼）。'); return; }
+  if(nx.holder!=='全共斗' && !REBEL.has(nx.holder)){ log('warn','上一层（'+(+f+1)+'F）由其它派系控制，无法合并。'); }
+  nx.n = (nx.n||0) + (x.n||0); nx.b = Math.min(120, nx.b + Math.round(x.b*0.4));
+  if(nx.holder==='全共斗' || REBEL.has(nx.holder)) nx.holder = x.holder;
+  log('act','【令】'+f+'F 守备队（'+(x.n||0)+' 人）撤往 '+(+f+1)+'F，街垒部分转移。');
+  x.n = 0; x.b = 0; x.vacant = true;
+  S.orders++; render(); draw();
+}
+function floorReinforce(f){
+  const src = S.units.filter(u=>u.alive && REBEL.has(u.side) && u.zone===curZone && (u.n||0)>10)
+    .sort((a,b)=>dist(a.cur,HALL)-dist(b.cur,HALL))[0];
+  if(!src){ log('warn','本战区没有可抽调的全共斗编组（每队至少留 10 人）。'); return; }
+  src.n -= 10; S.floors[f].n = (S.floors[f].n||0) + 10;
+  log('act','【令】'+src.unit+' 抽调 10 人增援 '+f+'F。'); S.orders++; render(); draw();
+}
+function floorAssault(f){
+  const p = needPoliceNear(); if(!p) return;
+  const lowerCleared = [1,2,3,4,5].filter(k=>+k<+f).every(k=>S.floors[k].holder==='机动队');
+  if(!lowerCleared){ log('warn','定向突击 '+f+'F 受阻：下层仍在守方手上，'+(p.unit)+' 只能逐层推进。'); return; }
+  p.order = {kind:'floor', f:f}; log('act','【令】'+p.unit+' 定向突击 '+f+'F。'); render();
+}
+function floorSuppress(f){
+  const p = needPoliceNear(); if(!p) return;
+  const x=S.floors[f]; x.b=Math.max(0,x.b-12);
+  log('act','【令】'+p.unit+' 对 '+f+'F 压制（水炮/催泪）：街垒 −12（现 '+Math.round(x.b)+'），未占地。');
+  S.orders++; render(); draw();
+}
+// 合并：把同层不同组织并成一股，或把下一层抽上来；人多则威力按 √n 放大
+function floorMergeOrgs(f){
+  const x = S.floors[f];
+  if(!REBEL.has(x.holder)){ log('warn',f+'F 不在守方手上。'); return; }
+  if(x.holder==='全共斗'){ log('warn',f+'F 已是统一指挥（全共斗）。'); return; }
+  log('act','【令】'+f+'F 各派合流：'+x.holder+' 与同层部队统一由「全共斗」指挥（人数合并计）。');
+  x.holder='全共斗'; S.orders++; render();
+}
+function floorMergeUp(f){
+  const from = S.floors[String(+f+1)];      // 把上一层并到本层
+  const to = S.floors[f];
+  if(!from || !REBEL.has(from.holder) || !REBEL.has(to.holder)){ log('warn','上下两层必须都在守方手上才能合并。'); return; }
+  const known = (to.n===null?0:to.n) + (from.n===null?0:from.n);
+  const unknown = (to.n===null || from.n===null);
+  to.n = (known===0 && unknown) ? null : known;
+  to.b = Math.min(120, to.b + Math.round(from.b*0.5));
+  log('act','【令】'+(+f+1)+'F 守备队并入 '+f+'F（合计 '+(to.n===null?'人数未详':to.n+' 人')+'，街垒 '+Math.round(to.b)+'）。');
+  from.n = 0; from.b = 0; from.holder = '全共斗'; from.vacant = true;
+  S.orders++; render(); draw();
+}
+function mergeUnits(){
+  const zoneUnits = S.units.filter(u=>u.alive && u.zone===curZone && sideOf(u.side)===sideOf(playerSide));
+  if(zoneUnits.length<2){ log('warn','本战区本方编组不足两个，无法合并。'); return; }
+  const [a,b] = zoneUnits.sort((x,y)=>(y.n||0)-(x.n||0));
+  const na = a.n===null?0:a.n, nb = b.n===null?0:b.n;
+  if(na+nb<=0){ log('warn','这两个编组都没给出人数，只能合并番号，不改变威力。'); }
+  a.n = (a.n===null||b.n===null) ? null : na+nb;
+  a.n0 = (a.n0===null||b.n0===null) ? null : (a.n0+b.n0);
+  a.morale = Math.round((a.morale+b.morale)/2);
+  a.supply = Math.min(100, Math.round((a.supply+b.supply)/2));
+  a.unit = a.unit.replace(/（.*）/,'')+'＋'+shortName(b.unit);
+  b.alive = false;
+  log('act','【令】'+a.unit+' 合并完成：'+(a.n===null?'人数未详':a.n+' 人')+'，威力按 √n 放大。');
+  selUnit = a.idx; S.orders++; render(); draw();
+}
+
+// ===== 战报（规则摘要 + API） =====
+function pushDigest(beforeLen){
+  const lines = S.log.slice(beforeLen).map(l=>l.txt);
+  if(lines.length) S.digest.push({turn:S.turn, t:S.t, lines:lines});
+  if(S.digest.length>60) S.digest = S.digest.slice(-60);
+}
+function stateBrief(){
+  const fl = [1,2,3,4,5,6].map(k=>k+'F '+(S.floors[k].holder==='机动队'?'机动队':(holderLabel(k)+' '+(S.floors[k].n===null?'人数未详':S.floors[k].n+'人')))
+    +' 街垒'+Math.round(S.floors[k].b)).join('；');
+  const sites = S.sites.filter(b=>b.id!=='yasuda_hall').map(b=>b.name+'='+b.holder).join('、');
+  const units = S.units.filter(u=>u.alive).map(u=>u.unit+'('+u.side+','+(u.n===null?'人数未详':u.n+(u.nunit||'人'))+',士气'+Math.round(u.morale)+',补给'+Math.round(u.supply||0)+')').join('；');
+  return {t:fmt(S.t), turn:S.turn, floors:fl, sites:sites, units:units, arrests:S.arrests, captured:S.captured, orders:S.orders};
+}
+function digestText(n){
+  return S.digest.slice(-n).map(d=>'第'+d.turn+'回合('+fmt(d.t)+')：'+d.lines.join(' / ')).join('\n');
+}
+async function callAI(){
+  const base = ($('apiBase').value||'https://api.deepseek.com').replace(/\/$/,'');
+  const model = $('apiModel').value || 'deepseek-v4-flash';
+  const key = ($('apiKey').value||'').trim();
+  if(!key){ $('apistate').textContent = '请先填 API Key'; return; }
+  localStorage.setItem('yasuda_api', JSON.stringify({base:base, model:model, key:key}));
+  const st = stateBrief();
+  const sys = '你是 1969 年 1 月日本「安田讲堂攻防战」战役推演的参谋记录官。只依据我给的推演状态写战报，'
+    + '不得虚构未给出的数字、人名与部队；不确定就写「未详」。语言用简洁的中文军事通报口吻，'
+    + '分 3—5 句：当前时刻与回合、双方态势（按楼层/据点）、本回合发生了什么、下回合的判断。不超过 400 字。';
+  const user = '【状态】\n时刻：'+st.t+'（第 '+st.turn+' 回合）\n讲堂逐层：'+st.floors
+    + '\n各据点：'+st.sites+'\n在场编组：'+st.units+'\n被捕/清剿累计：'+st.arrests+' 人；制压据点 '+st.captured+' 处；已下命令 '+st.orders+' 条'
+    + '\n【最近回合摘要】\n'+(digestText(6)||'（暂无）');
+  $('apistate').textContent = '生成中…';
+  try{
+    const r = await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:model,messages:[{role:'system',content:sys},{role:'user',content:user}],temperature:0.7,max_tokens:2400})});
+    const txt = await r.text();
+    if(!r.ok){ $('apistate').textContent = 'API '+r.status+'：'+txt.slice(0,120); return; }
+    const j = JSON.parse(txt); const ch = (j.choices && j.choices[0]) || {}, msg = ch.message || {};
+    let out = (msg.content||'').trim();
+    if(!out && msg.reasoning_content) out = '（模型只返回了推理，增大 max_tokens 或换模型）';
+    if(ch.finish_reason==='length') out += '\n（注：本次生成触到 token 上限，末尾被截断——把模型换成非推理型或再点一次生成）';
+    pushReport(st.t, out, 'api');
+    $('apistate').textContent = '已生成（'+((j.usage&&j.usage.total_tokens)||'?')+' tokens）';
+  }catch(e){ $('apistate').textContent = '请求失败：'+e.message; }
+}
+function pushReport(when, txt, src){
+  S.reports.push({when:when, txt:txt, src:src});
+  if(S.reports.length>20) S.reports=S.reports.slice(-20);
+  renderReports();
+}
+function renderReports(){
+  $('reports').innerHTML = S.reports.slice().reverse().map(r=>
+    '<div style="margin:8px 0;padding:8px;border-left:3px solid '+(r.src==='api'?'#e08a3c':'#4f8fd0')+';background:#121a24">'+
+    '<div class="meta">'+(r.src==='api'?'API 战报':'规则战报')+' · '+r.when+'</div>'+
+    '<div style="white-space:pre-wrap;line-height:1.65">'+r.txt+'</div></div>').join('') || '<div class="meta">还没有战报。点上面的按钮生成。</div>';
+}
+function renderDigest(){
+  $('digest').innerHTML = S.digest.slice(-8).reverse().map(d=>
+    '<div style="margin:6px 0"><div class="meta">第 '+d.turn+' 回合 · '+fmt(d.t)+'</div><div>'+d.lines.map(x=>'· '+x).join('<br>')+'</div></div>'
+  ).join('') || '<div class="meta">尚无回合摘要。</div>';
+}
+
+function renderStructure(){
+  const el = $('structmap'); if(!el) return;
+  const H = k=>S.floors[k];
+  const band = (y,h,k,title)=>{
+    const x = H(k), c = holderColor(x.holder), unk = x.n===null;
+    return '<g>'+
+      '<rect x="150" y="'+y+'" width="170" height="'+h+'" fill="'+c+'" fill-opacity=".40" stroke="#93a8bd" stroke-width="1.2"/>'+
+      '<text x="235" y="'+(y+14)+'" fill="#ffffff" font-size="11.5" text-anchor="middle">'+k+'F　'+title+'</text>'+
+      '<text x="235" y="'+(y+27)+'" fill="#eaf3fb" font-size="9.5" text-anchor="middle">'+holderLabel(k)+'</text>'+
+      '<text x="235" y="'+(y+39)+'" fill="#c3d2e2" font-size="9" text-anchor="middle">'+(unk?'人数未详':x.n+' 人')+'｜街垒 '+Math.round(x.b)+'</text>'+
+    '</g>';
+  };
+  const svg =
+   '<svg viewBox="0 0 420 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;background:#0b1018;border-radius:6px">'+
+    '<rect x="0" y="0" width="420" height="560" fill="#0b1018"/>'+
+    '<path d="M0,190 L296,190 L420,325 L420,560 L0,560 Z" fill="#16241b"/>'+
+    '<path d="M296,190 L420,325 L420,560 L296,560 Z" fill="#111a14"/>'+
+    '<line x1="0" y1="190" x2="296" y2="190" stroke="#5c8f6c" stroke-width="1.5"/>'+
+    '<line x1="296" y1="190" x2="420" y2="325" stroke="#3f6b4c" stroke-width="1.5" stroke-dasharray="5 4"/>'+
+    '<text x="8" y="182" fill="#8fbf9a" font-size="11">本乡台地·正门侧（西）</text>'+
+    '<text x="414" y="352" fill="#7fa88b" font-size="11" text-anchor="end">崖下·御殿下侧（东）</text>'+
+    band(100,45,'5','机械室·仓库' )+
+    band(145,45,'4','大讲堂上部 777 席')+
+    band(190,45,'3','大讲堂 961 席＋回廊')+
+    band(235,45,'2','本部办公室')+
+    band(280,45,'1','本部办公室·校长室')+
+    '<rect x="140" y="325" width="156" height="28" fill="#2a3644" stroke="#4e6a86" stroke-dasharray="4 3"/>'+
+    '<text x="218" y="344" fill="#8fb0cd" font-size="10" text-anchor="middle">B1F　地下</text>'+
+    '<rect x="246" y="46" width="36" height="54" fill="'+holderColor(H('6').holder)+'" fill-opacity=".45" stroke="#a9c1d6"/>'+
+    '<circle cx="264" cy="34" r="8" fill="none" stroke="#e8d8a8" stroke-width="2"/>'+
+    '<line x1="264" y1="34" x2="264" y2="28" stroke="#e8d8a8" stroke-width="1.5"/>'+
+    '<text x="288" y="62" fill="#cfe0ef" font-size="10">9F 钟室</text>'+
+    '<text x="288" y="78" fill="#9fb4c8" font-size="10">6—8F 楼梯间</text>'+
+    '<text x="288" y="96" fill="'+holderColor(H('6').holder)+'" font-size="9.5">6F '+holderLabel('6')+' 街垒 '+Math.round(H('6').b)+'</text>'+
+    '<line x1="140" y1="196" x2="140" y2="232" stroke="#f0c96b" stroke-width="3"/>'+
+    '<text x="134" y="215" fill="#f0c96b" font-size="10.5" text-anchor="end">正门入口</text>'+
+    '<line x1="112" y1="190" x2="112" y2="325" stroke="#d08a5a" stroke-width="1.5" stroke-dasharray="4 3"/>'+
+    '<line x1="112" y1="190" x2="140" y2="190" stroke="#d08a5a" stroke-width="1"/>'+
+    '<line x1="112" y1="325" x2="140" y2="325" stroke="#d08a5a" stroke-width="1"/>'+
+    '<text x="106" y="252" fill="#e0a273" font-size="10.5" text-anchor="end">3F 与 1F</text>'+
+    '<text x="106" y="267" fill="#e0a273" font-size="10.5" text-anchor="end">高差约 6m</text>'+
+    '<text x="14" y="392" fill="#9fb4c8" font-size="10.5">※ 模式断面，层高与进深非实寸比。</text>'+
+    '<text x="14" y="412" fill="#d9c08a" font-size="10.5">※ 1969 年座位：3F 961 ＋ 4F 777 ＝ 1,738 席</text>'+
+    '<text x="14" y="430" fill="#9fb4c8" font-size="10.5">　 1990 年改修后 728＋416＝1,144 席。</text>'+
+    '<text x="14" y="452" fill="#9fb4c8" font-size="10.5">※ 1·2 层在 1969 年是本部办公室与校长室；</text>'+
+    '<text x="14" y="470" fill="#9fb4c8" font-size="10.5">　 校长室 1979 年本部栋建成后迁出。</text>'+
+    '<text x="14" y="492" fill="#9fb4c8" font-size="10.5">※ 大讲堂后部（东）为半圆形，3 层外墙由回廊环绕。</text>'+
+    '<text x="14" y="512" fill="#6f8aa3" font-size="9.5">※ 色块＝当前控制方；数字来自推演状态，非史料原值。</text>'+
+    '<text x="14" y="530" fill="#6f8aa3" font-size="9.5">依据：东大新闻 2025-11-06／东大 FOCUS〈不可思议的大讲堂〉／安田讲堂改修工程概要</text>'+
+   '</svg>';
+  el.innerHTML = svg;
+  const note = $('structnote');
+  if(note) note.textContent = '当前：'+fmt(S.t)+'　第 '+S.turn+' 回合　｜　制压据点 '+S.captured+' 处　｜　被捕/清剿 '+S.arrests+' 人　｜　点左侧楼层行可选中该层下令';
+}
+
+function render(){
+  $('clock').textContent = fmt(S.t)+'　第 '+S.turn+' 回合';
+  $('modebadge').textContent = mode==='script'?'剧本':'自由 · '+playerSide;
+  // floors（可点选，逐层下令）
+  let fh='';
+  ['6','5','4','3','2','1'].forEach(k=>{
+    const x=S.floors[k], c=holderColor(x.holder);
+    fh += '<tr data-f="'+k+'" class="'+(selFloor===k?'on':'')+'" style="cursor:pointer'+(selFloor===k?';background:#243346':'')+'">'+
+      '<td style="width:44px">'+k+'F'+(k==='6'?' 塔':'')+'</td>'+
+      '<td><span class="dot" style="background:'+c+';display:inline-block"></span> '+holderLabel(k)+'</td>'+
+      '<td>'+(x.n===null?'人数未详':x.n+' 人')+'</td><td>街垒 '+Math.round(x.b)+'</td></tr>';
+  });
+  $('floors').innerHTML = fh;
+  document.querySelectorAll('#floors tr').forEach(tr=>tr.onclick=()=>{ selFloor=tr.dataset.f; render(); });
+  const fo = $('floorops'); if(fo) fo.innerHTML = floorOpsButtons();
+  renderDigest(); renderReports(); renderStructure();
+  // units
+  let uh='';
+  S.units.forEach(u=>{
+    if(!u.alive && !(u.n0===0)) return;
+    // 同阵营即视为我方编组：全共斗指挥键可下令给反帝学评／社学同／中核派／革马／明大共斗等
+    if(sideOf(u.side) !== sideOf(playerSide)) return;
+    const c = COL[u.sect]||COL[u.side];
+    uh += '<div class="unit'+(selUnit===u.idx?' sel':'')+'" data-i="'+u.idx+'">'+
+      '<span class="dot" style="background:'+c+'"></span><div style="flex:1">'+u.unit+
+      '<div class="meta">'+u.zone+'｜'+(u.n===null?'未详':u.n+(u.nunit||'人'))+'｜士气 '+Math.round(u.morale)+'｜补给 '+Math.round(u.supply)+
+      (u.order?'｜命令 '+u.order.kind+(u.order.id?'·'+(S.sites.find(s=>s.id===u.order.id)||{}).name||u.order.id:''):'')+'</div></div></div>';
+  });
+  $('units').innerHTML = uh || '<div class="meta">无</div>';
+  document.querySelectorAll('#units .unit').forEach(el=>el.onclick=()=>{ selUnit=+el.dataset.i; render(); drawOrders(); });
+
+  // ledger
+  let lh='<tr><th>编组</th><th>阵营</th><th>人数</th><th>损失</th><th>士气</th><th>补给</th><th>命令</th></tr>';
+  S.units.forEach(u=>{ lh+='<tr><td>'+u.unit+'</td><td>'+(u.sect||u.side)+'</td><td>'+(u.n===null?'未详':u.n+(u.nunit||'人'))+
+    '</td><td>'+(u.losses||0)+'</td><td>'+Math.round(u.morale)+'</td><td>'+Math.round(u.supply)+'</td><td>'+(u.order?u.order.kind:'—')+'</td></tr>'; });
+  if(S.flags.length) lh+='<tr><td colspan="7" style="color:#ffb4a2">完整性告警 '+S.flags.length+' 条（见复盘）</td></tr>';
+  $('ledger').innerHTML = lh;
+
+  // replay
+  let rh='';
+  if(S.flags.length) rh += '<h3 style="color:#ffb4a2">完整性告警</h3>'+S.flags.map(f=>'<div class="ev warn"><span class="tm">'+fmt(f.t)+'</span><span>'+f.txt+'</span></div>').join('');
+  rh += '<h3>易手记录（'+S.flips.length+'）</h3>' + (S.flips.length? S.flips.map(f=>'<div class="ev"><span class="tm">'+fmt(f.t)+'</span><span>'+f.txt+'</span></div>').join('') : '<div class="meta">尚无</div>');
+  rh += '<h3>总计</h3><div class="meta">被捕/清剿人数（按编组人数累计）：'+S.arrests+'｜据点易手：'+S.flips.length+'｜完整性告警：'+S.flags.length+'</div>';
+  $('replaylist').innerHTML = rh;
+
+  draw();
+}
+function drawOrders(){
+  const u = selUnit!==null ? S.units[selUnit] : null;
+  if(!u || !u.alive){ $('selinfo').textContent='先在下面点一个编组'; $('orders').innerHTML=''; return; }
+  const cs = caps(u);
+  $('selinfo').textContent = u.unit+'｜'+u.zone+'｜'+cs.join(' / ');
+  const targets = S.sites.filter(b=>b.id!=='yasuda_hall' || true);
+  let html='';
+  const btn=(k,label,disabled)=>'<button class="bt" data-k="'+k+'" '+(disabled?'disabled':'')+'>'+label+'</button>';
+  if(cs.includes('assault')) html+=btn('assault','突击（选点）',false);
+  if(cs.includes('attack')) html+=btn('attack','出击（选点）',false);
+  if(cs.includes('fire')) html+=btn('fire','放水/催泪',false);
+  if(cs.includes('defend')) html+=btn('defend','死守加固',false);
+  if(cs.includes('repair')) html+=btn('repair','修补街垒 +9',false);
+  if(cs.includes('counter')) html+=btn('counter','反击附近',false);
+  if(cs.includes('move')) html+=btn('move','转移（选点）',false);
+  if(cs.includes('retreat')) html+=btn('retreat','撤退',false);
+  if(cs.includes('recon')) html+=btn('recon','侦察敌情',false);
+  if(cs.includes('rest')) html+=btn('rest','休整',false);
+  if(cs.includes('encircle')) html+=btn('encircle','包围',false);
+  html+='<div style="margin-top:6px"><select id="tgtsel" style="width:100%;background:#1b2431;color:#e8eef6;border:1px solid #26323f;border-radius:4px;padding:4px">'+
+    targets.map(b=>'<option value="'+b.id+'">'+b.name+'（'+b.holder+'）</option>').join('')+'</select></div>';
+  $('orders').innerHTML = html;
+  document.querySelectorAll('#orders button').forEach(el=>el.onclick=()=>{
+    const k = el.dataset.k, tid = $('tgtsel')?$('tgtsel').value:null;
+    if(['assault','attack','fire','move'].includes(k) && !tid){ toast('先在下面选一个目标'); return; }
+    u.order = ['assault','attack','fire','move'].includes(k) ? {kind:k,id:tid} : {kind:k};
+    log('rec','回执：'+u.unit+' 命令「'+k+'」已受理。');
+    render(); drawOrders();
+  });
+}
+
+// ---------- 初始化 UI ----------
+function initUI(){
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+    $('pane-'+b.dataset.p).classList.add('on');
+    if(b.dataset.p==='report'){ renderReports(); renderDigest(); }
+  });
+  // API 设置（localStorage 记忆）
+  try{
+    const saved = JSON.parse(localStorage.getItem('yasuda_api')||'{}');
+    $('apiBase').value = saved.base || 'https://api.deepseek.com';
+    $('apiModel').value = saved.model || 'deepseek-v4-flash';
+    $('apiKey').value = saved.key || '';
+  }catch(e){}
+  if($('btnAI')) $('btnAI').onclick = ()=>{ callAI(); };
+  if($('btnAIAuto')) $('btnAIAuto').onclick = ()=>{
+    S.autoAI = !S.autoAI;
+    $('btnAIAuto').textContent = S.autoAI ? '停止自动战报' : '每回合自动生成';
+    log('sys','自动战报：'+(S.autoAI?'开（每 2 回合）':'关'));
+  };
+  $('zones').innerHTML = ZONES.map(z=>'<button class="bt'+(z.id===curZone?' on':'')+'" data-z="'+z.id+'">'+z.name+'</button>').join('');
+  document.querySelectorAll('#zones button').forEach(el=>el.onclick=()=>{
+    const z = ZONES.find(x=>x.id===el.dataset.z); curZone=z.id;
+    map.setView([z.lat,z.lng], z.zoom);
+    document.querySelectorAll('#zones button').forEach(x=>x.classList.remove('on')); el.classList.add('on');
+  });
+  $('sides').innerHTML = ['全共斗','机动队'].map(s=>'<button class="bt'+(s===playerSide?' on':'')+'" data-s="'+s+'">指挥 '+s+'</button>').join('');
+  document.querySelectorAll('#sides button').forEach(el=>el.onclick=()=>{
+    playerSide = el.dataset.s; S.playerSide = playerSide; mode='free'; $('btnMode').textContent='切到剧本回放';
+    document.querySelectorAll('#sides button').forEach(x=>x.classList.remove('on')); el.classList.add('on');
+    log('sys','切换为自由推演，你指挥「'+playerSide+'」。'); render();
+  });
+  $('btnStep').onclick = ()=>{ step(); };  $('btnReset').onclick = ()=>{ stop(); fresh(); selUnit=null; render(); drawOrders(); $('log').innerHTML=''; };
+  $('btnMode').onclick = ()=>{ mode = mode==='script'?'free':'script'; $('btnMode').textContent = mode==='script'?'切到自由推演':'切到剧本回放'; log('sys','模式：'+(mode==='script'?'剧本回放':'自由推演')); render(); };
+  $('btnAuto').onclick = ()=>{ if(playing){ stop(); } else { playing=true; $('btnAuto').textContent='暂停';
+      timer=setInterval(()=>{ if(S.t+STEP>T1){ stop(); toast('已到 1/20 06:00'); return; } step(); }, 700); } };
+  // 图例
+  const leg = [['机动队','机动队'],['全共斗','全共斗'],['反帝学评','反帝学评'],['社学同','社学同'],['社学同 ML派','社学同 ML派'],
+               ['中核派','中核派'],['革马派','革马派'],['明大共斗','明大共斗'],['民青','民青（第三方）']];
+  $('legend').innerHTML = leg.map(([k,l])=>'<div><i style="background:'+COL[k]+'"></i>'+l+'</div>').join('')+
+    '<div style="color:#8ea0b4;margin-top:3px">大圆＝安田讲堂（逐层）／小圆＝据点／点＝编组</div>';
+}
+function stop(){ playing=false; if(timer) clearInterval(timer); timer=null; const b=$('btnAuto'); if(b) b.textContent='自动'; }
+
+function initLists(){
+  $('evlist').innerHTML = PACK.events.map(e=>'<div class="ev" data-lat="'+(e.lat||'')+'" data-lng="'+(e.lng||'')+'"><span class="tm">'+e.date+' '+(e.time_label||'')+
+    '</span><span>'+e.event+' <span class="badge">'+(e.sources||[]).join(',')+'</span></span></div>').join('');
+  $('figlist').innerHTML = '<table><tr><th>阵营</th><th>指标</th><th>值</th><th>口径</th><th>状态</th></tr>'+
+    PACK.figures.map(f=>'<tr><td>'+f.side+'</td><td>'+f.metric+'</td><td>'+(f.value===null?'未核得':f.value)+'</td><td>'+(f.scope||'')+'</td><td>'+f.evidence_status+'</td></tr>').join('')+'</table>';
+  $('docbox').innerHTML = '<p>本演示对齐 Gentactix-DSH 的结构（scenarios/sources/timeline/forces/figures/gaps + anchors + adjudication 几何参数），但裁决器是教学级简化：只裁机动、街垒、逐层易手与人数账，<b>不产出伤亡估计</b>。</p>'+
+    '<p>可指挥范围：本乡（讲堂逐层、列品馆、法研、法文2号馆、医学部两馆、教育学部、第2食堂）、神田（街垒、明大骏河台、御茶之水站前派出所）、驹场（第8本馆、第1·2本馆）——对所有警察与民青据点都可下命令。</p>'+
+    '<p><b>势力归属（按 S1 原文逐条核过）：</b>工学部 1·2·7·8 号馆与列品馆在 1/12 15:00 由<b>反帝学评</b>系再封锁（列品馆 1/13 起转社学同 ML 派），理学部 1 号馆 1/15 16:00 由反帝学评主力约 150 人侵入、1/17 12:00 再封锁——故这两栋记在反帝学评名下，不留「全共斗」。讲堂 2 层是中核派＋全斗联＋青医联混成，5 层为反帝学评（南侧屋顶）＋社学同（6 层阳台）。教育学部 1/18 是民青据点，但当日为令状检证、无人被捕，故不记入逮捕数。民青在史实里受警方保护，警方 AI 不把民青据点列为目标。</p>'+
+    '<p>几何参数：contact '+G.contact_km+' km、control '+G.control_radius_km+' km、encircle '+G.encircle_radius_km+' km、retreat '+G.retreat_check_km+' km、terrain ×'+G.terrain_factor+'。剧本回放用史料基线（讲堂 1F 07:00、2F 12:00、3F 14:45、5F 15:35、6F 17:27），自由推演只吃命令与数值。</p>'+
+    '<p>时刻异文：18 日中止 17:30（S1）／17:10（岛泰三）并列；19 日结束 17:45／17:46 并列；检举 633／983、讲堂内 397／374 并列——本演示不取平均，按来源分别标注。</p>';
+}
+
+fresh(); initUI(); initLists(); render(); drawOrders();
+
+// 截图/演示用：URL 带 #demo 时自动进入「自由推演·全共斗」并推进到 01-18 14:30；#demo-report 额外切到战报页
+(function(){
+  if(!location.hash.includes('demo')) return;
+  mode='free'; playerSide='全共斗'; S.playerSide=playerSide;
+  $('btnMode').textContent='切到剧本回放';
+  document.querySelectorAll('#sides button').forEach(x=>x.classList.toggle('on', x.dataset.s==='全共斗'));
+  log('sys','演示状态：自由推演，指挥全共斗。');
+  for(let i=0;i<6;i++) step();
+  ['1','2','3'].forEach(f=>{ selFloor=f; floorDefend(f); });
+  selFloor='1'; floorCounter('1');
+  for(let i=0;i<10;i++) step();
+  selFloor='2'; render();
+  pushReport(fmt(S.t), '【规则战报 · 第 '+S.turn+' 回合】\n'+digestText(3), 'rule');
+  if(location.hash.includes('report')){
+    [...document.querySelectorAll('.tabs button')].find(b=>b.textContent==='战报').click();
+  }
+  if(location.hash.includes('struct')){
+    [...document.querySelectorAll('.tabs button')].find(b=>b.textContent==='结构').click();
+  }
+  const zz = location.hash.includes('zoom19') ? 19 : (location.hash.includes('zoom18') ? 18 : 0);
+  if(zz) setTimeout(()=>map.setView([35.71329,139.76195], zz), 800);
+})();
+setTimeout(()=>{ map.invalidateSize(); map.setView([35.7129,139.7618],17); draw(); }, 300);
+</script>
+
+<div id="repo-badge" style="position:fixed;right:12px;bottom:12px;z-index:900;font:12px/1.6 'Microsoft YaHei',system-ui,sans-serif">
+  <a href="https://github.com/805972492/yasuda-1969" target="_blank" rel="noopener"
+     style="display:inline-block;padding:5px 10px;border-radius:6px;background:rgba(13,17,23,.86);
+            border:1px solid #26323f;color:#a9c0d6;text-decoration:none">
+     安田讲堂 1969 · 仓库与说明
+  </a>
+</div>
+</body>
+</html>
