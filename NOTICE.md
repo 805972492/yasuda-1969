@@ -39,9 +39,36 @@
 
 ## 五、软件
 
-- **Gentactix-DSH**：https://github.com/snow-wind-001/Gentactix-DSH
-  © 2026 pystrategylab，**MIT**。本仓库的 `campaign/` 按其数据结构（scenarios / sources / timeline / forces / figures / adjudication / corpus / anchors）组织；
-  `integrations/gentactix-dsh/` 提供把它并入该程序的补丁与新增文件。
+本项目的推演包**基于 [pystrategylab/Gentactix](https://github.com/pystrategylab/Gentactix) 扩展**，并按 [snow-wind-001/Gentactix-DSH](https://github.com/snow-wind-001/Gentactix-DSH) 的数据结构组织；感谢原作者开源。
+
+上游版权声明（MIT，随本仓库保留）：
+
+```
+MIT License
+
+Copyright (c) 2026 pystrategylab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+- 本仓库不包含上游代码本体；`integrations/gentactix-dsh/` 只提供新增文件与最小 diff。
+- 本仓库自己的代码同样以 MIT 发布（`LICENSE`），文档与数据表以 CC BY 4.0 发布（`LICENSE-docs`）；两者都不改变上游的 MIT 条件。
 - **Leaflet 1.9.4**（BSD-2-Clause）与 **leaflet-polylinedecorator**（MIT）经 CDN 引入，未随仓库分发。
 - 演示页面的结算逻辑为本仓库自行编写，不是 Gentactix-DSH 上游代码。
 
