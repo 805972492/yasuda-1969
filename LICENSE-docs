@@ -2,11 +2,11 @@
 
 适用范围：docs/、data/、campaign/ 下的 Markdown、CSV、JSON、GeoJSON 衍生表，以及 maps/ 中自制地图的图层与注记文字。代码（*.py，以及 *.html 里的脚本）见 LICENSE（MIT）。第三方史料、地图瓦片与截图另有其权利人，见 NOTICE.md，不在本许可范围内。
 
-建议署名（可放在页面页脚或论文脚注）：
+建议署名（安未末）：
 
   安田讲堂攻防战资料集（1969-01-18/19），yasuda-1969，
   https://github.com/<你的账号>/yasuda-1969 ，CC BY 4.0；
-  修改处：<说明改了什么>
+  修改处：暂无
 
 许可全文如下。来源：https://creativecommons.org/licenses/by/4.0/legalcode.txt
 
